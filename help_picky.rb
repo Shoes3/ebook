@@ -16,7 +16,7 @@ module Shoes::Manual
   def self.path
     path = "manual-#{Shoes.language}.txt"
     unless File.exists? path
-      path = "manual-en.txt"
+      path = "#{DIR}/static/manual-en.txt"
     end
     path
   end
@@ -268,7 +268,7 @@ module Shoes::Manual
             termd = terms.text.downcase
             #found = termd.empty? ? [] : manual_search(termd)
             found = (termd.empty? or termd[0] == 'z' or termd[0] == 'y') ? [] : manual_search(termd)
-            info "found: #{found}"
+            #info "found: #{found}"
             para "#{found.length} matches", :align => "center", :margin_bottom => 0
             found.each do |typ, head|
               flow :margin => 4 do
@@ -386,7 +386,7 @@ module Shoes::Manual
 
   def manual_search(terms)
     terms += " " if terms.length == 1
-    info "search: #{@search.find_all(terms)}"
+    #info "search: #{@search.find_all(terms)}"
     @search.find_all(terms).map do |title, count|
       title.split(" ", 2)
     end

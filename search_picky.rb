@@ -22,7 +22,7 @@ class Search
       @update = true
       if File.directory?("index")
          file = Dir[File.join("index", "development", "terms", "*")].first
-         if (File.mtime("manual-en.txt") < File.mtime(file))
+         if (File.mtime("#{DIR}/static/manual-en.txt") < File.mtime(file))
             @index.load
             @update = false
          end
