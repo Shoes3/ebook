@@ -6,7 +6,7 @@ require("kramdown")
 module Kramdown
   module Converter
     class Preprocess < Base
- 
+        attr_accessor :image_hash
          
         def initialize(root, options)
           #puts "pre_proc init opts: #{options.inspect}"
@@ -36,6 +36,24 @@ module Kramdown
       def convert_blank(el)
         #%{para("\n")}
       end
+      
+      # TODO: fix these in kd-render
+      def convert_br(el)
+      end
+      
+      def convert_blockquote(el)
+      end
+      
+      def convert_table(el)
+      end
+      
+      def convert_ol(el)
+      end
+      
+      def convert_html_element(el)
+      end
+      
+      #end of *this* TODO
          
       def convert_text(el)
         #%{para("#{el.value}", :margin_left => 0, :margin_right => 0)}
@@ -77,11 +95,12 @@ module Kramdown
       end
          
       def convert_a(el)
-        puts "anchor: #{el.inspect}"
+        #puts "anchor: #{el.inspect}"
         results = []
         el.children.each do |inner_el|
           results << inner_el.value if inner_el.type.eql?(:text)
         end
+        @link_hash[results.join] = el.attr['href']
         #%[para(link("#{results.join}") { open_url("#{el.attr['href']}") }, :margin_left => 0, :margin_right => 0)]
       end
       
