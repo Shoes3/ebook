@@ -14,6 +14,8 @@ module Kramdown
             @image_hash = options[:img_hash]
             @header_hash = options[:hdr_hash]
             @link_hash = options[:lnk_hash]
+            @menu_list = options[:menu_list]
+            #@section = options[:chapter]
             #puts "setting up @image_hash #{@image_hash.inspect}"
           end
           super
@@ -57,6 +59,12 @@ module Kramdown
          
       def convert_text(el)
         #%{para("#{el.value}", :margin_left => 0, :margin_right => 0)}
+        dblbracket = el.value[/\[\[(.*)\]\]/]
+        if dblbracket
+          menu = dblbracket[2..-3].gsub(' ', '-')
+          @menu_list << "#{menu}.md"
+          puts "LINK: #{menu}" 
+        end
       end
          
       def convert_header(el)
@@ -95,13 +103,12 @@ module Kramdown
       end
          
       def convert_a(el)
-        #puts "anchor: #{el.inspect}"
         results = []
         el.children.each do |inner_el|
           results << inner_el.value if inner_el.type.eql?(:text)
         end
-        @link_hash[results.join] = el.attr['href']
         #%[para(link("#{results.join}") { open_url("#{el.attr['href']}") }, :margin_left => 0, :margin_right => 0)]
+        return nil
       end
       
       # TODO: syntax highlight not working (no errors - just doesn't return anything)
@@ -125,8 +132,15 @@ module Kramdown
         url = el.attr['src']
         ext = File.extname(url);
         hsh = @image_hash
-        #puts "#{el.attr['src']} -> #{el.attr['alt']}#{ext} for #{hsh}"
-        hsh[url] = "#{el.attr['alt']}#{ext}"
+        fname = "#{el.attr['alt']}#{ext}"
+        fname.gsub!(' ', '-');
+        #puts "alt tag: #{fname}"
+        if !fname || fname[0] == '.' # start of extension 
+          # someone didn't put an alt tag like they were supposed to do. 
+          fname = File.basename(url)
+          #puts "missing alt - using #{fname}"
+        end
+        hsh[url] = fname
       end
   
       def convert_typographic_sym(el)

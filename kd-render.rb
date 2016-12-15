@@ -146,6 +146,23 @@ module Kramdown
         %[para '-']
       end
       
+      # TODO: fix these in kd-render
+      def convert_br(el)
+      end
+      
+      def convert_blockquote(el)
+      end
+      
+      def convert_table(el)
+      end
+      
+      def convert_ol(el)
+      end
+      
+      def convert_html_element(el)
+      end
+    
+      
       def syntax_highlighter(converter, text, lang, type)
         opts = converter.options[:syntax_highlighter_opts].dup
         lexer = ::Rouge::Lexer.find_fancy(lang || opts[:default_lang], text)
