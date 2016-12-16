@@ -125,7 +125,7 @@ Shoes.app :width => 800 do
             #puts "images: #{foo.inspect}"
           end
         end
-        # follow the TOC document  and all the parts it has
+        # follow the TOC document  and all the parts it points to
         puts "menu_list: #{@menu_list.uniq.sort}"
         cfg['toc']['files'] = @menu_list.uniq
         #cfg['images'] = @image_hash
@@ -137,58 +137,57 @@ Shoes.app :width => 800 do
         end
       end
       
-      
-      button "render" do
-        # this should just require the file that will be the ebook.rb copied/called
-        # place of Shoes.rb in the end app. Not anywhere near that.
-        # needs to be guided by the toc order (which we don't have yet)
-        require 'kd-render'
-        if cfg['nested']
-           cfg['sections'].each do |section, section_hash|
-            section_hash[:files].each do |fl|
-              #puts "render document #{fl}"
-              #para "document #{fl}"
-              docpath = File.join(cfg['doc_home'], section_hash[:dir], fl)
-              puts "deep render #{docpath}"
-              render_doc = Kramdown::Document.new(File.read(docpath), 
-                { :syntax_highlighter => "rouge",
-                  :syntax_highlighter_opts => { css_class: false, line_numbers: false, inline_theme: "github" },
-                 input: cfg['input_format']
-                }
-              ).to_shoes
-            rendering(render_doc)
+      button "order doc" do
+        @panel.clear do
+          el_v = []
+          el_t = []
+          flow do
+            button "cancel" do
+              Shoes.quit
+            end
+            button "save" do
+              cfg['toc']['section_order'] = []
+              # TODO: Magic occurs
+              
+              File.open("#{cfg['doc_home']}/.ebook/ebook.yaml", 'w') do |f|
+                YAML.dump(cfg, f)
+              end
             end
           end
-        else
-          # flat dir of md
-          cfg['sections'].each do |section, section_hash|
-            section_hash[:files].each do |fl|
-              #puts "render document #{fl}"
-              #para "document #{fl}"
-              docpath = File.join(cfg['doc_home'], fl)
-              puts "flat render #{docpath}"
-              render_doc = Kramdown::Document.new(File.read(docpath), 
-                { :syntax_highlighter => "rouge",
-                  :syntax_highlighter_opts => { css_class: false, line_numbers: false, inline_theme: "github" },
-                 input: 'GFM', gfm_quirks: ['hard_wrap'], 
-                }
-              ).to_shoes
-            rendering(render_doc)
+          section_stack = stack do
+            section_names = cfg['sections'].keys.each do |pos|
+              flow do
+                eln =  edit_line width: 30
+                el_v << eln
+                t = cfg['sections'][pos][:title]
+                elt = edit_line text: t, width: 200
+                el_t << elt
+              end
             end
           end
         end
-        #cfg['files'].each do |relpath|
-        #  render_doc = Kramdown::Document.new(File.read(@doc), 
-        #    { :syntax_highlighter => "rouge",
-        #      :syntax_highlighter_opts => { css_class: false, line_numbers: false, inline_theme: "github" },
-        #      input: 'GFM'
-        #    }
-        #  ).to_shoes
-        #  rendering(render_doc)
-        #end
       end
+      
+      button "order sections" do
+      end
+      
+      button "render" do
+        # This is used to testing the yaml & rendering. It creates a
+        # Shoes window which does the rendering using help_ebook.rb (a Shoes module)
+        # copy the current yaml to 'shoes_ebook.yaml' it what ever dir
+        # we're running in.
+        puts "Render this #{Dir.getwd}/shoes_ebook.yaml"
+        File.open("shoes_ebook.yaml", 'w') do |f|
+          YAML.dump(cfg, f)
+        end
+        require 'help_ebook'
+        window(:width => 720, :height => 640, &Shoes.make_ebook("The Shoes eBook"))
+      end
+      
     end
-    @ebook_dir_el = edit_line width: 400
-    @err_box = edit_box heigth: 300, width: 780
+    @panel = stack do
+      @ebook_dir_el = edit_line width: 400
+      @err_box = edit_box heigth: 300, width: 780
+    end
   end
 end
