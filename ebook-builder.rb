@@ -141,6 +141,9 @@ Shoes.app :width => 800 do
         @panel.clear do
           el_v = []
           el_t = []
+          para "Order the sections starting with 1, 0 means delete."
+          para "Save will write to #{cfg['doc_home']}/.ebook/ebook.yaml"
+          para "Important: Save before you move to other options."
           flow do
             button "cancel" do
               Shoes.quit
@@ -148,7 +151,12 @@ Shoes.app :width => 800 do
             button "save" do
               cfg['toc']['section_order'] = []
               # TODO: Magic occurs
-              
+              el_v.each_index do |i|
+                ord = el_v[i].text.to_i
+                if ord > 0
+                  cfg['toc']['section_order'][ord-1] = el_t[i].text
+                end
+              end
               File.open("#{cfg['doc_home']}/.ebook/ebook.yaml", 'w') do |f|
                 YAML.dump(cfg, f)
               end
@@ -159,8 +167,8 @@ Shoes.app :width => 800 do
               flow do
                 eln =  edit_line width: 30
                 el_v << eln
-                t = cfg['sections'][pos][:title]
-                elt = edit_line text: t, width: 200
+                t = cfg['sections'][pos][:dir]
+                elt = edit_line text: t, width: 200, state: "readonly"
                 el_t << elt
               end
             end
@@ -169,6 +177,46 @@ Shoes.app :width => 800 do
       end
       
       button "order sections" do
+        @panel.clear do
+          para "Select section to view the documents. Order them from 1. 0 means delete"
+          para "Important: Save after modifing each section before selecting the next!"
+          el_v = []
+          el_t = []
+          sect = {}
+          flow do 
+            button "Quit" do
+              Shoes.quit
+            end
+            button "Save" do
+              sect[:display_order] = []
+              el_v.each_index do |i|
+                ord = el_v[i].text.to_i
+                if ord > 0
+                  sect[:display_order][ord-1] = el_t[i].text
+                end
+              end
+              File.open("#{cfg['doc_home']}/.ebook/ebook.yaml", 'w') do |f|
+                YAML.dump(cfg, f)
+              end
+            end
+            list_box items: cfg['toc']['section_order'] do |lb|
+              item = lb.text
+              @chapter.clear do
+                sect = cfg['sections'][item]
+                files = sect[:files]
+                files.each_index do |i|
+                  flow do
+                    eln = edit_line text: "#{i+1}", width: 30
+                    el_v << eln
+                    elt = edit_line text: files[i], width: 200, state: "readonly"
+                    el_t << elt
+                  end
+                end
+              end
+            end
+          end
+          @chapter = stack 
+        end
       end
       
       button "render" do
