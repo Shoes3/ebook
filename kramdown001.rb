@@ -143,7 +143,7 @@ def rendering(e)
 end
 
 Shoes.app {
-   doc = Kramdown::Document.new(File.read("manual-en.txt"), { :syntax_highlighter => "rouge", :syntax_highlighter_opts => { css_class: false, line_numbers: false, inline_theme: "github" } }).to_shoes
+   doc = Kramdown::Document.new(File.read("fts-md/manual-en.txt"), { :syntax_highlighter => "rouge", :syntax_highlighter_opts => { css_class: false, line_numbers: false, inline_theme: "github" } }).to_shoes
    
    info doc.inspect
    rendering(doc)

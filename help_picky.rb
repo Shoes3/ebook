@@ -439,7 +439,7 @@ def Shoes.make_help_page(book_title = "The Shoes Manual")
   proc do
     extend Shoes::Manual
     docs = load_docs Shoes::Manual.path
-
+    puts docs.inspect
     style(Shoes::Image, :margin => 8, :margin_left => 100)
     style(Shoes::Code, :stroke => "#C30")
     style(Shoes::LinkHover, :stroke => green, :fill => nil)
