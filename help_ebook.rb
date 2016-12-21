@@ -50,7 +50,10 @@ module Shoes::Ebook
   def Shoes.make_ebook(book_title = "The Shoes Manual")
     font "fonts/Coolvetica.ttf" unless Shoes::FONTS.include? "Coolvetica"
     # load the yaml and see what we have for a TOC and settings
+    #   we need to do a lot in our load_doc including the kramdown generation
+    #   and toc building
     cfg = YAML.load_file('shoes_ebook.yaml')
+    
     puts "Toc root #{cfg['toc']['root']}"
     proc do
       #extend Shoes::Manual

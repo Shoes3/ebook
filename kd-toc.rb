@@ -1,15 +1,15 @@
 # -*- encoding: utf-8 -*-
-# Preprocess for img and links
+# Preprocess for menus those [[ ]] links
 
 require("kramdown")
 
 module Kramdown
   module Converter
-    class Preprocess < Base
+    class Menuparse < Base
         attr_accessor :image_hash
          
         def initialize(root, options)
-          #puts "pre_proc init opts: #{options.inspect}"
+          #puts "MenuParse init opts: #{options.inspect}"
           if options 
             @image_hash = options[:img_hash]
             @header_hash = options[:hdr_hash]
@@ -69,7 +69,7 @@ module Kramdown
          
       def convert_header(el)
         #puts "hdr: #{el.options[:raw_text]} #{el.options[:level]}"
-        @header_hash[el.options[:raw_text]] = el.options[:level]
+        #@header_hash[el.options[:raw_text]] = el.options[:level]
       end
          
       def convert_p(el)
@@ -113,11 +113,6 @@ module Kramdown
       
       # TODO: syntax highlight not working (no errors - just doesn't return anything)
       def convert_codespan(el)
-        #puts el.type
-        ##puts highlight_code(el.value, el.attr['class'], :span)
-        ##h = ::Kramdown::Converter.syntax_highlighter(@options[:syntax_highlighter])
-        ##puts h.call(self, el.value, el.attr['class'], :span)
-        #puts syntax_highlighter(self, el.value, el.attr['class'], :span)
       end
          
       def convert_codeblock(el)
@@ -166,8 +161,9 @@ module Kramdown
   end
 end
 
-def pre_process(e)
-   e.kind_of?(Array) ? (e.each { |n| pre_process(n) }) : (eval e unless e.nil?)
+def to_menuparse(e)
+   puts "to_menuparse called"
+   e.kind_of?(Array) ? (e.each { |n| to_menuparse(n) }) : (eval e unless e.nil?)
    return 
 end
 

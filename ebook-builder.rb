@@ -103,22 +103,24 @@ Shoes.app :width => 800 do
       
       button "2 - preprocess" do
         require 'kd-pre'
+        require 'kd-toc'
         @panel.clear do
           para "This phase does a deeper dive into your .md documents and downloads any ",
-            "images from website that you have not downloaded before. It is safe to 'download' ",
+            "images from website that you have not downloaded before. It is safe to 'Proceed' ",
             "as many times as you like. Downloads will be shown below. 'Save' when ready to move on."
           flow do
-            button "download" do
+            button "Proceed" do
               @image_dirs = []
               @header_hash = {}
               @link_hash = {} 
               @menu_list = []
               Dir.chdir(cfg["doc_home"]) do
                 cfg['sections'].keys.each do |section|
-                  puts "using #{section}"
+                  #puts "using #{section}"
                   #puts "  #{cfg['sections'][section]}"
                   #puts "  #{cfg['sections'][section][:files]}"
                   @image_hash = {}
+                  @header_hash = {}
                   cfg['sections'][section][:files].each do |fname|
                     relpath = "#{cfg['sections'][section][:dir]}/#{fname}"
                     #puts "In dir #{relpath}"
@@ -143,37 +145,93 @@ Shoes.app :width => 800 do
                     end
                     Dir.chdir(".ebook/images") do
                       here = Dir.getwd
-                      @image_hash.each do |k, v| 
-                        next if File.exists?("#{here}/#{d}/#{v}")
-                        if confirm "Download to #{here}/#{d}/#{v}"
-                          Dir.mkdir(d) if !Dir.exists?(d)
-                          download k, save: "#{d}/#{v}"
-                          @err_box.append("downloaded #{d}/#{v} <- #{k}\n")
+                      # Grr
+                      if cfg['nested'] 
+                        @image_hash.each do |k, v| 
+                          next if File.exists?("#{here}/#{d}/#{v}")
+                          if confirm "Download to #{here}/#{d}/#{v}"
+                            Dir.mkdir(d) if !Dir.exists?(d)
+                            download k, save: "#{d}/#{v}"
+                            @err_box.append("downloaded #{d}/#{v} <- #{k}\n")
+                          end
+                        end
+                      else
+                        @image_hash.each do |k, v| 
+                          next if File.exists?("#{here}/#{v}")
+                          if confirm "Download to #{here}/#{v}"
+                            download k, save: "#{here}/#{v}"
+                            @err_box.append("downloaded #{here}/#{v} <- #{k}\n")
+                          end
                         end
                       end
                     end
                   end
                   foo = cfg['sections'][section]['images'] = @image_hash
-                  #puts "images: #{foo.inspect}"
+                  foo = cfg['sections'][section]['headers'] = @header_hash
+                end
+                
+                # Process the toc/menu documents if available and github nested
+                if cfg['toc']['root'] && cfg['nested'] == true
+                  @menu_list = []
+                  Dir.chdir(cfg['doc_home']) do |p|
+                    f = "#{p}/#{cfg['toc']['root']}"
+                    puts "process toc #{f}"
+                    pre_toc = Kramdown::Document.new(File.read(f, encoding: "UTF-8"),
+                          { menu_list: @menu_list, input: cfg['input_format']
+                          }).to_menuparse
+                    #puts "first level #{@menu_list}"
+                    # Getting tricksy and clumsy. Stumble or Dance?
+                    cfg['toc']['section_order'] = []
+                    cfg['toc']['files'] = []
+                    @menu_list.each do |md| 
+                      cfg['sections'].each do |sect_k, sect_v| 
+                        sect_files = cfg['sections'][sect_k][:files]
+                        pos = sect_files.find_index(md)
+                        if pos 
+                          puts "Found #{md} in #{sect_k}"
+                          cfg['toc']['section_order'] << sect_k
+                          cfg['toc']['files'] << md
+                          sect_files.delete_at(pos)
+                        end
+                      end
+                    end
+                    cfg['toc']['section_order'].each_index do |i|
+                      d = cfg['toc']['section_order'][i]
+                      sect = cfg['sections'][d]
+                      f = cfg['toc']['files'][i]
+                      @menu_list = []
+                      @err_box.append "toc process #{d}/#{f}\n"
+                      pre_toc = Kramdown::Document.new(File.read("#{d}/#{f}", encoding: "UTF-8"),
+                          { menu_list: @menu_list, input: cfg['input_format']
+                          }).to_menuparse
+                      cfg['sections'][d]['display_order'] = []
+                      @menu_list.each do |md|
+                        cfg['sections'][d]['display_order'] << md
+                        pos = cfg['sections'][d][:files].find_index(md)
+                        if pos
+                          cfg['sections'][d][:files].delete_at(pos)
+                        else
+                          @err_box.append("failed delete of #{md}\n")
+                        end
+                      end
+                    end
+                    @err_box.append("Done - You can save if you want\n")
                   end
+                else
+                  puts "no toc to deal with"
                 end
               end
-            
-              button "Save" do
-                # follow the TOC document  and all the parts it points to
-                #puts "menu_list: #{@menu_list.uniq.sort}"
-                #cfg['toc']['files'] = @menu_list.uniq
-                #cfg['images'] = @image_hash
-                cfg['headers'] = @header_hash
-                cfg['links'] = @link_hash
-                # rewrite the ebook.yaml 
-                File.open("#{cfg['doc_home']}/.ebook/ebook.yaml", 'w') do |f|
-                  YAML.dump(cfg, f)
-                end
+            end
+            button "Save" do
+              cfg['links'] = @link_hash
+              # rewrite the ebook.yaml 
+              File.open("#{cfg['doc_home']}/.ebook/ebook.yaml", 'w') do |f|
+                YAML.dump(cfg, f)
               end
             end
           end
           @err_box = edit_box height: 300, width: 680
+        end
       end
       
       button "3- order sections" do
@@ -276,7 +334,7 @@ Shoes.app :width => 800 do
       end
       button "6 - Create an app" do
         @panel.clear do
-          para "Create your \"#{cfg['book_title']}\" ebook for #{RUBY_PLATFORM}. May gods have mercy on you!"
+          para "Create your \"#{cfg['book_title']}\" ebook for #{RUBY_PLATFORM}. May the gods be merciful!"
           button "Package" do
           end
         end
