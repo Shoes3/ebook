@@ -325,12 +325,12 @@ Shoes.app :width => 800 do
         # Shoes window which does the rendering using help_ebook.rb (a Shoes module)
         # copy the current yaml to 'shoes_ebook.yaml' it what ever dir
         # we're running in.
-        puts "Render this #{Dir.getwd}/shoes_ebook.yaml"
+        #puts "Render this #{Dir.getwd}/shoes_ebook.yaml"
         File.open("shoes_ebook.yaml", 'w') do |f|
           YAML.dump(cfg, f)
         end
-        require 'help_ebook'
-        window(:width => 720, :height => 640, &Shoes.make_ebook("The Shoes eBook"))
+        require 'show_ebook'
+        window(:width => 720, :height => 640, &Shoes.make_ebook(true))
       end
       button "6 - Create an app" do
         @panel.clear do

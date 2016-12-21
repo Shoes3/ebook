@@ -1,4 +1,6 @@
- # help_ebook 
+ # help_ebook - renders the manual. This script will be packaged
+ # into the users exe in place of Shoes.rb (or callable) by that
+ # script or the by the ebook-builder.  Beware the path names.
 module Shoes::Ebook
   require 'kd-render'
   def render_section 
@@ -47,19 +49,35 @@ module Shoes::Ebook
     #end
   end 
   
-  def Shoes.make_ebook(book_title = "The Shoes Manual")
+  # this will get confusing very quickly. 
+  # calls picky to load the indices
+  # returns an odd structure - IMO
+  def load_docs(cfg)
+    puts "load_docs nested #{cfg['nested']}"
+    # first, render the toc[root] document on the opening screen
+    # then grind though the sections and capture the sub-subsection (methods)
+    # in  Shoes manual parlance.
+    return []
+  end 
+  
+  def Shoes.make_ebook(test = false)
     font "fonts/Coolvetica.ttf" unless Shoes::FONTS.include? "Coolvetica"
     # load the yaml and see what we have for a TOC and settings
     #   we need to do a lot in our load_doc including the kramdown generation
     #   and toc building
-    cfg = YAML.load_file('shoes_ebook.yaml')
-    
-    puts "Toc root #{cfg['toc']['root']}"
+    @@cfg = YAML.load_file('shoes_ebook.yaml')
+    if !test 
+      @@cfg['doc_home'] = "#{DIR}/ebook" #  ebook dir created by the packaging
+    end
+    #puts "render this #{@cfg['doc_home']}"
+    book_title = @@cfg['book_title']
+    #puts "in class #{self.inspect}"
     proc do
-      #extend Shoes::Manual
+      extend Shoes::Ebook
       #docs = load_docs Shoes::Manual.path  # creates @docs which might be
       # an [[]] with a hash in there somewhere.  
-      docs = [] 
+      docs = load_docs(@@cfg)
+
       style(Shoes::Image, :margin => 8, :margin_left => 100)
       style(Shoes::Code, :stroke => "#C30")
       style(Shoes::LinkHover, :stroke => green, :fill => nil)
@@ -103,16 +121,18 @@ module Shoes::Ebook
         stack :margin_left => 118 do
           para book_title, :stroke => "#eee", :margin_top => 8, :margin_left => 17, 
             :margin_bottom => 0
-          @title = title docs[0][0], :stroke => white, :margin => 4, :margin_left => 14,
-            :margin_top => 0, :font => "Coolvetica"
-        end
+          #@title = title docs[0][0], :stroke => white, :margin => 4, :margin_left => 14,
+          #  :margin_top => 0, :font => "Coolvetica"
+          @title = title book_title, :stroke => white, :margin => 4, :margin_left => 14,
+            :margin_top => 0, :font => "Coolvetica"        end
         background "rgb(66, 66, 66, 180)".."rgb(0, 0, 0, 0)", :height => 0.7
         background "rgb(66, 66, 66, 100)".."rgb(255, 255, 255, 0)", :height => 20, :bottom => 0 
       end
       @doc =
-        stack :margin_left => 130, :margin_top => 20, :margin_bottom => 50, :margin_right => 50 + gutter,
-          &dewikify(docs[0][-1]['description'], true)
-      add_next_link(0, -1)
+        #stack :margin_left => 130, :margin_top => 20, :margin_bottom => 50, :margin_right => 50 + gutter,
+        #  &dewikify(docs[0][-1]['description'], true)
+        stack :margin_left => 130, :margin_top => 20, :margin_bottom => 50, :margin_right => 50 + gutter
+      #add_next_link(0, -1)
       stack :top => 84, :left => 0, :attach => Shoes::Window do
         flow :width => 118, :margin_left => 12, :margin_right => 12, :margin_top => 25 do
            stack :width => 38 do
@@ -154,7 +174,7 @@ module Shoes::Ebook
         end
       end
       image :width => 120, :height => 120, :top => -18, :left => 6 do
-        image "images/shoes-icon.png", :width => 100, :height => 100, :top => 10, :left => 10 
+        image "#{DIR}/static/app-icon.png", :width => 100, :height => 100, :top => 10, :left => 10 
         glow 2
       end
     end
