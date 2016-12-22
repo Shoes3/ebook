@@ -321,8 +321,8 @@ Shoes.app :width => 800 do
       end
       
       button "5 - test render" do
-        # This is used to testing the yaml & rendering. It creates a
-        # Shoes window which does the rendering using help_ebook.rb (a Shoes module)
+        # This is used for testing the yaml & rendering. It creates a
+        # Shoes window which does the rendering using show_ebook.rb (a Shoes module)
         # copy the current yaml to 'shoes_ebook.yaml' it what ever dir
         # we're running in.
         #puts "Render this #{Dir.getwd}/shoes_ebook.yaml"
@@ -332,6 +332,7 @@ Shoes.app :width => 800 do
         require 'show_ebook'
         window(:width => 720, :height => 640, &Shoes.make_ebook(true))
       end
+      
       button "6 - Create an app" do
         @panel.clear do
           para "Create your \"#{cfg['book_title']}\" ebook for #{RUBY_PLATFORM}. May the gods be merciful!"

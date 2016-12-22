@@ -51,7 +51,7 @@ module Shoes::Ebook
   
   # this will get confusing very quickly. 
   # calls picky to load the indices
-  # returns an odd structure - IMO
+  # 
   def load_docs(cfg)
     puts "load_docs nested #{cfg['nested']}"
     # first, render the toc[root] document on the opening screen
@@ -59,6 +59,20 @@ module Shoes::Ebook
     # in  Shoes manual parlance.
     return []
   end 
+  
+  def get_title(sect_num)
+    if @@cfg['nested']
+     if sect_num == 0 # intro page 
+       return @@cfg['book_title']
+     else
+       sect_nm =  @@cfg['toc']['section_order'][section]
+       return @@cfg['sections'][sect_nm]['title']
+      end
+    else
+      ka = @@cfg['sections'].keys
+      return @@cfg['sections'][ka[sect_num]][:title]
+    end
+  end
   
   def Shoes.make_ebook(test = false)
     font "fonts/Coolvetica.ttf" unless Shoes::FONTS.include? "Coolvetica"
@@ -71,7 +85,6 @@ module Shoes::Ebook
     end
     #puts "render this #{@cfg['doc_home']}"
     book_title = @@cfg['book_title']
-    #puts "in class #{self.inspect}"
     proc do
       extend Shoes::Ebook
       #docs = load_docs Shoes::Manual.path  # creates @docs which might be
@@ -121,17 +134,20 @@ module Shoes::Ebook
         stack :margin_left => 118 do
           para book_title, :stroke => "#eee", :margin_top => 8, :margin_left => 17, 
             :margin_bottom => 0
-          #@title = title docs[0][0], :stroke => white, :margin => 4, :margin_left => 14,
-          #  :margin_top => 0, :font => "Coolvetica"
-          @title = title book_title, :stroke => white, :margin => 4, :margin_left => 14,
-            :margin_top => 0, :font => "Coolvetica"        end
+          # @title will change dynamiclly 
+          @title = title get_title(0), :stroke => white, :margin => 4, :margin_left => 14,
+            :margin_top => 0, :font => "Coolvetica" 
+        end
         background "rgb(66, 66, 66, 180)".."rgb(0, 0, 0, 0)", :height => 0.7
         background "rgb(66, 66, 66, 100)".."rgb(255, 255, 255, 0)", :height => 20, :bottom => 0 
       end
+      # @doc is the canvas for drawing content (pre-built Shoes coded (load_docs)
       @doc =
         #stack :margin_left => 130, :margin_top => 20, :margin_bottom => 50, :margin_right => 50 + gutter,
         #  &dewikify(docs[0][-1]['description'], true)
         stack :margin_left => 130, :margin_top => 20, :margin_bottom => 50, :margin_right => 50 + gutter
+        
+      # Setup display for the back/forward 'buttons'
       #add_next_link(0, -1)
       stack :top => 84, :left => 0, :attach => Shoes::Window do
         flow :width => 118, :margin_left => 12, :margin_right => 12, :margin_top => 25 do
