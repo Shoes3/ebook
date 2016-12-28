@@ -1,6 +1,7 @@
 # https://github.com/Shoes3/shoes3/wiki
 # http://www.w3schools.com/tags/tag_li.asp
 # http://stackoverflow.com/questions/4900167/override-module-method-from-another-module
+# cjc : This has to populate the cfg sections and add to the picky db
 
 require("rouge")
 require("kramdown")
@@ -24,7 +25,7 @@ module Rouge
       def initialize(options)
         @inline_theme = options.fetch(:inline_theme, nil)
         @inline_theme = Theme.find(@inline_theme).new if @inline_theme.is_a? String
-        puts @inline_theme.render
+        #puts @inline_theme.render
       end
          
       def stream(tokens, &b)
@@ -42,9 +43,14 @@ module Kramdown
     class Shoes < Base
       ##include ShoesRouge
       def initialize(root, options)
-        super
+        @cfg = options[:cfg]
+        if @cfg 
+          puts "have cfg in"
+        end
+        @chapter = options[:chapter]
         ## options[:syntax_highlighter] = "rouge"
         #puts options
+        super
       end
          
       DISPATCHER = Hash.new {|h,k| h[k] = "convert_#{k}"}
@@ -114,11 +120,11 @@ module Kramdown
       
       # TODO: syntax highlight not working (no errors - just doesn't return anything)
       def convert_codespan(el)
-        puts el
+        #puts el
         ##puts highlight_code(el.value, el.attr['class'], :span)
         ##h = ::Kramdown::Converter.syntax_highlighter(@options[:syntax_highlighter])
         ##puts h.call(self, el.value, el.attr['class'], :span)
-        puts syntax_highlighter(self, el.value, el.attr['class'], :span)
+        #puts syntax_highlighter(self, el.value, el.attr['class'], :span)
       end
          
       def convert_codeblock(el)
@@ -131,11 +137,18 @@ module Kramdown
       end
       
       def convert_img(el)
-        puts el.attr['src']
-        #%[image "#{el.attr['src']}"] # crashes shoes 
+        #puts el.attr['src']
         url = el.attr['src']
         ext = File.extname(url);
-        %[para "IMAGE_HERE: #{el.attr['alt']}#{ext}"]
+        #%[para "IMAGE_HERE: #{@cfg['doc_home']}/#{el.attr['alt']}#{ext}"]
+        lcl = @cfg['sections'][@chapter]['images'][url]
+        if lcl
+          #puts "found local image #{lcl}"
+          %[image "#{@cfg['doc_home']}/.ebook/images/#{lcl}"]
+        else
+          puts "Bad Boy! sucking images from #{url}"
+          %[image "{#url}"]
+        end
       end
   
       def convert_typographic_sym(el)

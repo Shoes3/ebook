@@ -2,6 +2,7 @@
 require 'yaml'
 Shoes.app :width => 800 do
   yaml_fl = ARGV[1]
+  puts "yaml file #{yaml_fl}"
   cfg = {}
   if yaml_fl
     cfg = YAML.load_file(yaml_fl)
@@ -171,7 +172,7 @@ Shoes.app :width => 800 do
                 end
                 
                 # Process the toc/menu documents if available and github nested
-                if cfg['toc']['root'] && cfg['nested'] == true
+                if cfg['toc']['root'] # && cfg['nested'] == true
                   @menu_list = []
                   Dir.chdir(cfg['doc_home']) do |p|
                     f = "#{p}/#{cfg['toc']['root']}"
@@ -218,7 +219,8 @@ Shoes.app :width => 800 do
                     @err_box.append("Done - You can save if you want\n")
                   end
                 else
-                  puts "no toc to deal with"
+                  # TODO: we need to do better perhaps set section_order
+                  puts "no toc to deal with, faking it"
                 end
               end
             end

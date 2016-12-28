@@ -251,8 +251,9 @@ module Shoes::Manual
         @sections[k] = hsh
         [k, hsh]
       end
-    $DEBUGF.flush if $DEBUG
+    #$DEBUGF.flush if $DEBUG
     @search.finish!
+    puts @docs.inspect
     @docs
   end
 

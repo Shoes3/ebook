@@ -3,74 +3,86 @@
  # script or the by the ebook-builder.  Beware the path names.
 module Shoes::Ebook
   require 'kd-render'
-  def render_section 
-    if cfg['nested']
-       cfg['sections'].each do |section, section_hash|
-        section_hash[:files].each do |fl|
-          #puts "render document #{fl}"
-          #para "document #{fl}"
-          docpath = File.join(cfg['doc_home'], section_hash[:dir], fl)
-          puts "deep render #{docpath}"
-          render_doc = Kramdown::Document.new(File.read(docpath), 
-            { :syntax_highlighter => "rouge",
-              :syntax_highlighter_opts => { css_class: false, line_numbers: false, inline_theme: "github" },
-             input: cfg['input_format']
-            }
-          ).to_shoes
-        rendering(render_doc)
-        end
-      end
-    else
-      # flat dir of md
-      cfg['sections'].each do |section, section_hash|
-        section_hash[:files].each do |fl|
-          #puts "render document #{fl}"
-          #para "document #{fl}"
-          docpath = File.join(cfg['doc_home'], fl)
-          puts "flat render #{docpath}"
-          render_doc = Kramdown::Document.new(File.read(docpath), 
-            { :syntax_highlighter => "rouge",
-              :syntax_highlighter_opts => { css_class: false, line_numbers: false, inline_theme: "github" },
-             input: cfg['input_format'], gfm_quirks: ['hard_wrap'], 
-            }
-          ).to_shoes
-        rendering(render_doc)
-        end
-      end
-    end
-    #cfg['files'].each do |relpath|
-    #  render_doc = Kramdown::Document.new(File.read(@doc), 
-    #    { :syntax_highlighter => "rouge",
-    #      :syntax_highlighter_opts => { css_class: false, line_numbers: false, inline_theme: "github" },
-    #      input: 'GFM'
-    #    }
-    #  ).to_shoes
-    #  rendering(render_doc)
-    #end
-  end 
-  
-  # this will get confusing very quickly. 
-  # calls picky to load the indices
+  require 'search_picky'
+  def render_file (cfg, sect_nm, dir, file)
+    render_doc = Kramdown::Document.new(File.read(File.join(dir, file)), 
+        { :syntax_highlighter => "rouge",
+          :syntax_highlighter_opts => { css_class: false, line_numbers: false, inline_theme: "github" },
+          input: cfg['input_format'],
+          cfg: cfg, chapter: sect_nm, input: cfg['input_format']
+        }
+      ).to_shoes
+    rendering(render_doc)
+  end
+
+  # this will get confusing very quickly. Not that the manual made much sense.
+  # calls picky to create the indices
   # 
   def load_docs(cfg)
-    puts "load_docs nested #{cfg['nested']}"
-    # first, render the toc[root] document on the opening screen
-    # then grind though the sections and capture the sub-subsection (methods)
-    # in  Shoes manual parlance.
-    return []
-  end 
-  
-  def get_title(sect_num)
-    if @@cfg['nested']
-     if sect_num == 0 # intro page 
-       return @@cfg['book_title']
-     else
-       sect_nm =  @@cfg['toc']['section_order'][section]
-       return @@cfg['sections'][sect_nm]['title']
+    puts "load_docs nested?  #{cfg['nested']}"
+    # need a structure to hold the generated Shoes code
+    @search = Search.new
+    @sections, @methods, @mindex = {}, {}, {}
+    cfg['link_hash'] = {}
+    cfg['code_struct'] = []  # array of hashes
+    if cfg['nested'] # what's difference between 'display_order' and :display_order ?
+      cfg['toc']['section_order'].each_index do |si|
+        sect_name = cfg['toc']['section_order'][si]
+        puts "going into #{sect_name}"
+        sect_intro = cfg['toc']['files'][si] 
+        # do we want to parse this and display it? I think yes but not until
+        # we can test many other things that can invalidate the whole project
+        sect = cfg['sections'][sect_name] # this is a hash
+        sect['display_order'].each do |fl|
+          puts "render #{cfg['doc_home']}/#{cfg[sect]}/#{fl}"
+          #render_file(cfg, "#{cfg['doc_home']}/#{cfg[sect]}", fl)
+        end
       end
     else
-      ka = @@cfg['sections'].keys
-      return @@cfg['sections'][ka[sect_num]][:title]
+      # not a nested github mess
+      # parse the root doc. 
+      top_c = render_file(cfg, cfg['toc']['section_order'][0], cfg['doc_home'], cfg['toc']['root'])
+      landing = {title: "Home", code: top_c}
+      cfg['code_struct'] <<  landing
+      cfg['link_hash']['Home'] = landing
+      #puts "topc:  #{top_c.inspect}"
+      cfg['toc']['section_order'].each_index do |si|
+        sect_name = cfg['toc']['section_order'][si]
+        puts "going into #{sect_name}"
+        sect = cfg['sections'][sect_name] # this is a hash
+        sect[:display_order].each do |fl|
+          puts "render #{cfg['doc_home']}/#{fl}"
+          contents = render_file(cfg, sect_name, cfg['doc_home'], fl)
+          landing = {title: sect[:title], code: contents}
+          cfg['code_struct'] << landing
+          cfg['link_hash'][sect[:title]] = landing
+        end
+      end
+    
+    end
+    return cfg['code_struct']
+  end 
+  
+  def get_title(cfg, sect_num)
+    if cfg['nested']
+     if sect_num == 0 # intro page 
+       return cfg['book_title']
+     else
+       sect_nm =  cfg['toc']['section_order'][section]
+       return cfg['sections'][sect_nm]['title']
+      end
+    else
+      ka = cfg['sections'].keys
+      return cfg['sections'][ka[sect_num]][:title]
+    end
+  end
+  
+  def open_section(cfg, title)
+    here = cfg['link_hash'][title]
+    puts "Open #{title} goes to #{here[:title]}"
+    @doc.clear do
+      #puts "DO THIS: #{here[:code]}"
+      instance_eval here[:code][0]
     end
   end
   
@@ -129,19 +141,22 @@ module Shoes::Ebook
         end
       }
       
+      # title bar:
       stack do
         background black
         stack :margin_left => 118 do
-          para book_title, :stroke => "#eee", :margin_top => 8, :margin_left => 17, 
+          para @@cfg[:book_title], :stroke => "#eee", :margin_top => 8, :margin_left => 17, 
             :margin_bottom => 0
           # @title will change dynamiclly 
-          @title = title get_title(0), :stroke => white, :margin => 4, :margin_left => 14,
+          @title = title   @@cfg[:book_title], :stroke => white, :margin => 4, :margin_left => 14,
             :margin_top => 0, :font => "Coolvetica" 
         end
         background "rgb(66, 66, 66, 180)".."rgb(0, 0, 0, 0)", :height => 0.7
         background "rgb(66, 66, 66, 100)".."rgb(255, 255, 255, 0)", :height => 20, :bottom => 0 
+        puts "title bar is set up for #{@@cfg['book_title']}"
       end
-      # @doc is the canvas for drawing content (pre-built Shoes coded (load_docs)
+      
+      # @doc is the slot for drawing content: (pre-built) Shoes code from load_docs
       @doc =
         #stack :margin_left => 130, :margin_top => 20, :margin_bottom => 50, :margin_right => 50 + gutter,
         #  &dewikify(docs[0][-1]['description'], true)
@@ -166,18 +181,24 @@ module Shoes::Ebook
         end
         @toc = {}
         stack :margin => 12, :width => 130, :margin_top => 20 do
-          docs.each do |sect_s, sect_h|
-            sect_cls = sect_h['class']
-            para strong(link(sect_s, :stroke => black) { open_section(sect_s) }),
-              :size => 11, :margin => 4, :margin_top => 0
-            @toc[sect_cls] =
-              stack :hidden => @toc.empty? ? false : true do
-                links = sect_h['sections'].map do |meth_s, meth_h|
-                  [link(meth_s) { open_methods(meth_s) }, "\n"]
-                end.flatten
-                links[-1] = {:size => 9, :margin => 4, :margin_left => 10}
-                para *links
-              end
+          #docs.each do |sect_s, sect_h|
+          #  sect_cls = sect_h['class']
+          #  para strong(link(sect_s, :stroke => black) { open_section(sect_s) }),
+          #    :size => 11, :margin => 4, :margin_top => 0
+          #  @toc[sect_cls] =
+          #    stack :hidden => @toc.empty? ? false : true do
+          #      links = sect_h['sections'].map do |meth_s, meth_h|
+          #        [link(meth_s) { open_methods(meth_s) }, "\n"]
+          #      end.flatten
+          #      links[-1] = {:size => 9, :margin => 4, :margin_left => 10}
+          #      para *links
+          #    end
+          # end
+          @@cfg['code_struct'].each do |hsh| 
+            title = hsh[:title]
+            puts "Menu Title: #{title}"
+            para strong(link(title, stroke:  black) { open_section @@cfg, title }),
+              size: 11, margin: 4, margin_top: 0
           end
         end
         stack :margin => 12, :width => 118, :margin_top => 6 do
