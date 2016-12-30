@@ -8,11 +8,10 @@ module Shoes::Ebook
     render_doc = Kramdown::Document.new(File.read(File.join(dir, file)), 
         { :syntax_highlighter => "rouge",
           :syntax_highlighter_opts => { css_class: false, line_numbers: false, inline_theme: "github" },
-          input: cfg['input_format'],
           cfg: cfg, chapter: sect_nm, input: cfg['input_format']
         }
       ).to_shoes
-    rendering(render_doc)
+    #rendering(render_doc)
   end
 
   # this will get confusing very quickly. Not that the manual made much sense.
@@ -45,7 +44,6 @@ module Shoes::Ebook
       landing = {title: "Home", code: top_c}
       cfg['code_struct'] <<  landing
       cfg['link_hash']['Home'] = landing
-      #puts "topc:  #{top_c.inspect}"
       cfg['toc']['section_order'].each_index do |si|
         sect_name = cfg['toc']['section_order'][si]
         puts "going into #{sect_name}"
@@ -53,12 +51,19 @@ module Shoes::Ebook
         sect[:display_order].each do |fl|
           puts "render #{cfg['doc_home']}/#{fl}"
           contents = render_file(cfg, sect_name, cfg['doc_home'], fl)
-          landing = {title: sect[:title], code: contents}
+          landing = {title: fl, code: contents}
           cfg['code_struct'] << landing
-          cfg['link_hash'][sect[:title]] = landing
+          cfg['link_hash'][fl] = landing
         end
       end
-    
+      # TODO: there is a special place in Hell for doing this:
+      # for sidebar display and nav purposes, we need a new section
+      # in front of the others
+      #nsect = {dir: cfg['doc_home'], title: "Home",
+      #  files: cfg['toc']['root'], display_order: [cfg['toc']['root']]}
+      #cfg['sections']['Home'] = nsect
+      #cfg['toc']['section_order'].unshift(nsect['title'])
+      #puts "After Prepending = #{cfg['toc']['section_order']}"
     end
     return cfg['code_struct']
   end 
@@ -77,13 +82,28 @@ module Shoes::Ebook
     end
   end
   
-  def open_section(cfg, title)
+  # open/close sections on the sidebar
+  def open_sidebar(cfg, title)
+  end
+  
+  def draw_ruby(e)
+   e.kind_of?(Array) ? (e.each { |n| rendering(n) }) : (instance_eval e unless e.nil?)
+  end
+  
+  # this is for loading into @doc
+  def show_doc(cfg, title)
+    puts cfg['link_hash'].keys
     here = cfg['link_hash'][title]
-    puts "Open #{title} goes to #{here[:title]}"
+    #puts "Open #{title} goes to #{here[:title]}"
+    code = here[:code]
     @doc.clear do
-      #puts "DO THIS: #{here[:code]}"
-      instance_eval here[:code][0]
+      #puts "DO THIS: #{code}"
+      draw_ruby code 
     end
+  end
+  
+  def clean_name(fl)
+    File.basename(fl, ".*").gsub(/\-/,' ')
   end
   
   def Shoes.make_ebook(test = false)
@@ -179,6 +199,7 @@ module Shoes::Ebook
               }, :margin => 4, :align => 'center', :weight => 'bold', :size => 9
            end
         end
+        # create menus on the sidebar
         @toc = {}
         stack :margin => 12, :width => 130, :margin_top => 20 do
           #docs.each do |sect_s, sect_h|
@@ -194,11 +215,24 @@ module Shoes::Ebook
           #      para *links
           #    end
           # end
-          @@cfg['code_struct'].each do |hsh| 
-            title = hsh[:title]
-            puts "Menu Title: #{title}"
-            para strong(link(title, stroke:  black) { open_section @@cfg, title }),
+          
+          # TODO: Again, 'nested' raises it's pointy head and it's not smiling
+          @@cfg['toc']['section_order'].each do |sect_nm| 
+            puts "Create menu for #{sect_nm} in #{@@cfg['toc']['section_order']}"
+            sect = @@cfg['sections'][sect_nm]
+            #puts "section #{sect.inspect}"
+            title = sect[:title]
+            #puts "Menu Title: #{title}"
+            para strong(link(title, stroke:  black) { open_sidebar @@cfg, title }),
               size: 11, margin: 4, margin_top: 0
+            @toc[title] =
+              stack hidden: @toc.empty? ? false: true do
+                links = sect[:display_order].collect do |nm|
+                  [ link(clean_name(nm)) { show_doc @@cfg, nm }, "\n"]
+                end.flatten
+                links[-1] = {:size => 9, :margin => 4, :margin_left => 10}
+                para *links
+              end
           end
         end
         stack :margin => 12, :width => 118, :margin_top => 6 do
