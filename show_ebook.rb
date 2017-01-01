@@ -8,14 +8,16 @@ module Shoes::Ebook
     render_doc = Kramdown::Document.new(File.read(File.join(dir, file)), 
         { :syntax_highlighter => "rouge",
           :syntax_highlighter_opts => { css_class: false, line_numbers: false, inline_theme: "github" },
-          cfg: cfg, chapter: sect_nm, input: cfg['input_format']
+          cfg: cfg, chapter: sect_nm, input: cfg['input_format'], hard_wrap: false,
+          gfm_quirk: []
         }
       ).to_shoes
     #rendering(render_doc)
   end
 
-  # this will get confusing very quickly. Not that the manual made much sense.
-  # calls picky to create the indices
+  
+  # TODO: This will be moved to a separate script in the future as 'compile' phase of 
+  # ebook-builer where it will also pre-populate picky db
   # 
   def load_docs(cfg)
     puts "load_docs nested?  #{cfg['nested']}"
@@ -38,16 +40,21 @@ module Shoes::Ebook
         end
       end
     else
-      # not a nested github mess
-      # parse the root doc. 
-      top_c = render_file(cfg, cfg['toc']['section_order'][0], cfg['doc_home'], cfg['toc']['root'])
-      landing = {title: "Home", code: top_c}
+      # One 1 chapter/section , many files possible, with one nav menu
+      # parse the root doc. (nav menu)
+      toc_root_fl = cfg['toc']['root']
+      top_c = render_file(cfg, cfg['toc']['section_order'][0], cfg['doc_home'], toc_root_fl)
+      landing = {title: toc_root_fl, code: top_c}
+
+      cfg['toc']['files'] = [ toc_root_fl]
       cfg['code_struct'] <<  landing
-      cfg['link_hash']['Home'] = landing
+      cfg['link_hash'][toc_root_fl] = landing
+      cfg['have_nav'] = true;  # TODO: check don't set
       cfg['toc']['section_order'].each_index do |si|
         sect_name = cfg['toc']['section_order'][si]
         puts "going into #{sect_name}"
         sect = cfg['sections'][sect_name] # this is a hash
+        sect['intro'] = toc_root_fl
         sect[:display_order].each do |fl|
           puts "render #{cfg['doc_home']}/#{fl}"
           contents = render_file(cfg, sect_name, cfg['doc_home'], fl)
@@ -56,49 +63,64 @@ module Shoes::Ebook
           cfg['link_hash'][fl] = landing
         end
       end
-      # TODO: there is a special place in Hell for doing this:
-      # for sidebar display and nav purposes, we need a new section
-      # in front of the others
-      #nsect = {dir: cfg['doc_home'], title: "Home",
-      #  files: cfg['toc']['root'], display_order: [cfg['toc']['root']]}
-      #cfg['sections']['Home'] = nsect
-      #cfg['toc']['section_order'].unshift(nsect['title'])
-      #puts "After Prepending = #{cfg['toc']['section_order']}"
     end
     return cfg['code_struct']
   end 
   
-  def get_title(cfg, sect_num)
-    if cfg['nested']
-     if sect_num == 0 # intro page 
-       return cfg['book_title']
-     else
-       sect_nm =  cfg['toc']['section_order'][section]
-       return cfg['sections'][sect_nm]['title']
-      end
-    else
-      ka = cfg['sections'].keys
-      return cfg['sections'][ka[sect_num]][:title]
-    end
-  end
   
-  # open/close sections on the sidebar
-  def open_sidebar(cfg, title)
+  # open/close sections aka chapters on the sidebar due to click
+  # these are the toc nav files !
+  # sect is 
+  def open_sidebar(cfg, sect)
+    #visited(sect_s)
+    #sect_h = @sections[sect_s]
+    #sect_cls = sect_h['class']
+    #@toc.each { |k,v| v.send(k == sect_cls ? :show : :hide) }
+    #@title.replace sect_s
+    #@doc.clear(&dewikify_hi(sect_h['description'], terms, true)) 
+    @title.replace sect[:title]
+    @doc.clear do
+      show_doc(cfg, sect['intro'])
+    end
+    #add_next_link(@docs.index { |x,| x == sect_s }, -1) rescue nil
+    app.slot.scroll_top = 0
+    
+    
   end
   
   def draw_ruby(e)
    e.kind_of?(Array) ? (e.each { |n| rendering(n) }) : (instance_eval e unless e.nil?)
   end
   
-  # this is for loading into @doc
-  def show_doc(cfg, title)
-    puts cfg['link_hash'].keys
-    here = cfg['link_hash'][title]
-    #puts "Open #{title} goes to #{here[:title]}"
+  # 
+  def open_entry(cfg, title)
+    @title.replace clean_name (title)
+    show_doc cfg, title
+  end
+  
+  # this is a utility for loading a file.md into @doc
+  def show_doc (cfg, fl)
+    #puts cfg['link_hash'].keys
+    here = cfg['link_hash'][fl]
     code = here[:code]
     @doc.clear do
-      #puts "DO THIS: #{code}"
       draw_ruby code 
+    end
+  end
+  
+  # default @doc at startup
+  def show_intro(cfg)
+    proc do 
+      code = []
+      if cfg['have_nav']
+        tocr = cfg['toc']['root']
+        code = cfg['link_hash'][tocr][:code]
+      else # no ccfg/toc/root, just pick the first one. Perhaps the only one.
+        sect_nm = cfg['sections_order'][0]
+        fn = cfg['sections'][sect_nm]['display_order'][0]
+        code = cfg['link_hash'][fn][:code]
+      end
+      draw_ruby code
     end
   end
   
@@ -119,9 +141,7 @@ module Shoes::Ebook
     book_title = @@cfg['book_title']
     proc do
       extend Shoes::Ebook
-      #docs = load_docs Shoes::Manual.path  # creates @docs which might be
-      # an [[]] with a hash in there somewhere.  
-      docs = load_docs(@@cfg)
+      load_docs(@@cfg)
 
       style(Shoes::Image, :margin => 8, :margin_left => 100)
       style(Shoes::Code, :stroke => "#C30")
@@ -165,22 +185,20 @@ module Shoes::Ebook
       stack do
         background black
         stack :margin_left => 118 do
-          para @@cfg[:book_title], :stroke => "#eee", :margin_top => 8, :margin_left => 17, 
+          para @@cfg['book_title'], :stroke => "#eee", :margin_top => 8, :margin_left => 17, 
             :margin_bottom => 0
           # @title will change dynamiclly 
-          @title = title   @@cfg[:book_title], :stroke => white, :margin => 4, :margin_left => 14,
+          @title = title   @@cfg['book_title'], :stroke => white, :margin => 4, :margin_left => 14,
             :margin_top => 0, :font => "Coolvetica" 
         end
         background "rgb(66, 66, 66, 180)".."rgb(0, 0, 0, 0)", :height => 0.7
         background "rgb(66, 66, 66, 100)".."rgb(255, 255, 255, 0)", :height => 20, :bottom => 0 
-        puts "title bar is set up for #{@@cfg['book_title']}"
       end
       
       # @doc is the slot for drawing content: (pre-built) Shoes code from load_docs
       @doc =
-        #stack :margin_left => 130, :margin_top => 20, :margin_bottom => 50, :margin_right => 50 + gutter,
-        #  &dewikify(docs[0][-1]['description'], true)
-        stack :margin_left => 130, :margin_top => 20, :margin_bottom => 50, :margin_right => 50 + gutter
+       stack :margin_left => 130, :margin_top => 20, :margin_bottom => 50, :margin_right => 50 + gutter, 
+           &show_intro(@@cfg)
         
       # Setup display for the back/forward 'buttons'
       #add_next_link(0, -1)
@@ -223,12 +241,12 @@ module Shoes::Ebook
             #puts "section #{sect.inspect}"
             title = sect[:title]
             #puts "Menu Title: #{title}"
-            para strong(link(title, stroke:  black) { open_sidebar @@cfg, title }),
+            para strong(link(title, stroke:  black) { open_sidebar @@cfg, sect }),
               size: 11, margin: 4, margin_top: 0
             @toc[title] =
               stack hidden: @toc.empty? ? false: true do
                 links = sect[:display_order].collect do |nm|
-                  [ link(clean_name(nm)) { show_doc @@cfg, nm }, "\n"]
+                  [ link(clean_name(nm)) { open_entry @@cfg, nm }, "\n"]
                 end.flatten
                 links[-1] = {:size => 9, :margin => 4, :margin_left => 10}
                 para *links

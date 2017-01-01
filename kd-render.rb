@@ -44,9 +44,6 @@ module Kramdown
       ##include ShoesRouge
       def initialize(root, options)
         @cfg = options[:cfg]
-        if @cfg 
-          puts "have cfg in"
-        end
         @chapter = options[:chapter]
         ## options[:syntax_highlighter] = "rouge"
         #puts options
@@ -72,7 +69,8 @@ module Kramdown
       end
          
       def convert_text(el)
-        %{para("#{el.value}", :margin_left => 0, :margin_right => 0)}
+        #%{para("#{el.value}", :margin_left => 0, :margin_right => 0)}
+        %{para("#{el.value.gsub("\n", ' ')}", :margin_left => 0, :margin_right => 0)}
       end
          
       def convert_header(el)
@@ -128,12 +126,19 @@ module Kramdown
       end
          
       def convert_codeblock(el)
-        puts el.type
+        #puts el[:codeblock]
       end
          
-      # TODO: 
+      # TODO: How do I get kd:text out of el? 
       def convert_strong(el)
-        %[para "STRONG"]
+        results = []
+        #puts "el attr: #{el.attr.inspect}" #none
+        el.children.each do |inner_el|
+          puts "inner el: #{inner_el.inspect}"
+          #puts "Inner #{inner_el.text}"
+        end
+        #%[para (strong(t))]
+        nil
       end
       
       def convert_img(el)
