@@ -129,16 +129,13 @@ module Kramdown
         #puts el[:codeblock]
       end
          
-      # TODO: How do I get kd:text out of el? 
       def convert_strong(el)
         results = []
-        #puts "el attr: #{el.attr.inspect}" #none
         el.children.each do |inner_el|
-          puts "inner el: #{inner_el.inspect}"
-          #puts "Inner #{inner_el.text}"
+          results << inner_el.value
         end
-        #%[para (strong(t))]
-        nil
+        t = results.size > 1 ? results.join: results[0]
+        %[para strong("#{t}")]
       end
       
       def convert_img(el)
