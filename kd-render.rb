@@ -116,18 +116,24 @@ module Kramdown
         %[para(link("#{results.join}") { open_url("#{el.attr['href']}") }, :margin_left => 0, :margin_right => 0)]
       end
       
-      # TODO: syntax highlight not working (no errors - just doesn't return anything)
       def convert_codespan(el)
+        # This is a convoluted approach, suggest to find an alternative.
+        %[render_code(%{#{el.value}})]
+      end
+      alias :convert_codeblock :convert_codespan
+      
+      # TODO: syntax highlight not working (no errors - just doesn't return anything)
+      #def convert_codespan(el)
         #puts el
         ##puts highlight_code(el.value, el.attr['class'], :span)
         ##h = ::Kramdown::Converter.syntax_highlighter(@options[:syntax_highlighter])
         ##puts h.call(self, el.value, el.attr['class'], :span)
         #puts syntax_highlighter(self, el.value, el.attr['class'], :span)
-      end
+      #end
          
-      def convert_codeblock(el)
+      #def convert_codeblock(el)
         #puts el[:codeblock]
-      end
+      #end
          
       def convert_strong(el)
         results = []

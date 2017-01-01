@@ -115,7 +115,7 @@ module Shoes::Ebook
       if cfg['have_nav']
         tocr = cfg['toc']['root']
         code = cfg['link_hash'][tocr][:code]
-      else # no ccfg/toc/root, just pick the first one. Perhaps the only one.
+      else # no cfg/toc/root, just pick the first one. Perhaps the only one.
         sect_nm = cfg['sections_order'][0]
         fn = cfg['sections'][sect_nm]['display_order'][0]
         code = cfg['link_hash'][fn][:code]
@@ -126,6 +126,28 @@ module Shoes::Ebook
   
   def clean_name(fl)
     File.basename(fl, ".*").gsub(/\-/,' ')
+  end
+  
+  # this gets called when there is Shoes codeblock/span to display
+  def render_code(str)
+     str.strip!
+     stack :margin_bottom => 12 do 
+        background rgb(210, 210, 210), :curve => 4
+        para code(str), {:size => 9, :margin => 12}
+        stack :top => 0, :right => 2, :width => 70 do
+           rnts = stack do
+              background "#8A7", :margin => [0, 2, 0, 2], :curve => 4 
+              para link("Run this", :stroke => "#eee", :underline => "none") { eval(str, binding) },
+              :margin => 4, :align => 'center', :weight => 'bold', :size => 9
+           end
+           rnts.hide if str.match(/Shoes\.app|alert|confirm|ask|info|warn|debug/).nil?
+           stack do
+              background "#8A7", :margin => [0, 2, 0, 2], :curve => 4 
+              para link("Copy this", :stroke => "#eee", :underline => "none") { self.clipboard = str },
+              :margin => 4, :align => 'center', :weight => 'bold', :size => 9
+           end
+        end
+     end
   end
   
   def Shoes.make_ebook(test = false)
