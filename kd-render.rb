@@ -118,29 +118,42 @@ module Kramdown
       
       def convert_codespan(el)
         # This is a convoluted approach, suggest to find an alternative.
+        if @cfg['syntax_highlight']
+          return highlight_codespan el
+        end
         %[render_code(%{#{el.value}})]
       end
-      alias :convert_codeblock :convert_codespan
+      
+      def convert_codeblock (el)
+        # This is a convoluted approach, suggest to find an alternative.
+        if @cfg['syntax_highlight']
+          return highlight_codeblock el
+        end
+        %[render_code(%{#{el.value}})]
+      end
+      #alias :convert_codeblock :convert_codespan
       
       # TODO: syntax highlight not working (no errors - just doesn't return anything)
-      #def convert_codespan(el)
-        #puts el
+      def highlight_codespan(el)
+        puts "CS: #{el.inspect}"
         ##puts highlight_code(el.value, el.attr['class'], :span)
         ##h = ::Kramdown::Converter.syntax_highlighter(@options[:syntax_highlighter])
         ##puts h.call(self, el.value, el.attr['class'], :span)
         #puts syntax_highlighter(self, el.value, el.attr['class'], :span)
-      #end
+        nil
+      end
          
-      #def convert_codeblock(el)
-        #puts el[:codeblock]
-      #end
+      def highlight_codeblock(el)
+        puts "SB #{el.inspect}"
+        nil
+      end
          
       def convert_strong(el)
         results = []
         el.children.each do |inner_el|
           results << inner_el.value
         end
-        t = results.size > 1 ? results.join: results[0]
+        t = results.size > 1 ? results.join : results[0]
         %[para strong("#{t}")]
       end
       
