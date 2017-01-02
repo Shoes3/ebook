@@ -59,3 +59,10 @@ and then it replaces the Shoes startup and manual codewith the code that display
 It replaces the Shoes splash screen and the Shoes Manual with a reader/displayer of your document(s)
 
 Then it calls the  installer builder for your platform and you put the exe/app/deb on your website. 
+
+## ebook-builder.rb
+
+![ebook-builder](https://cloud.githubusercontent.com/assets/222691/21376329/4e90d74e-c6f1-11e6-894d-0ff8a75a9839.png)
+
+Is a wizard like program you can run from Shoes and it will walk you through building a
+correct yaml and testing it.
