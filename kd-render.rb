@@ -116,12 +116,12 @@ module Kramdown
         %[para(link("#{results.join}") { open_url("#{el.attr['href']}") }, :margin_left => 0, :margin_right => 0)]
       end
       
+      # there are `back ticks` in md
       def convert_codespan(el)
-        # This is a convoluted approach, suggest to find an alternative.
-        if @cfg['syntax_highlight']
-          return highlight_codespan el
-        end
-        %[render_code(%{#{el.value}})]
+        # need to escape some things in the string like "
+        str = el.value
+        str.gsub!(/\"/, '\"')
+        %[para "#{str}", font: 'monospace', stroke: coral]
       end
       
       def convert_codeblock (el)
@@ -131,19 +131,13 @@ module Kramdown
         end
         %[render_code(%{#{el.value}})]
       end
-      #alias :convert_codeblock :convert_codespan
-      
+         
       # TODO: syntax highlight not working (no errors - just doesn't return anything)
-      def highlight_codespan(el)
-        puts "CS: #{el.inspect}"
+      def highlight_codeblock(el)
         ##puts highlight_code(el.value, el.attr['class'], :span)
         ##h = ::Kramdown::Converter.syntax_highlighter(@options[:syntax_highlighter])
         ##puts h.call(self, el.value, el.attr['class'], :span)
         #puts syntax_highlighter(self, el.value, el.attr['class'], :span)
-        nil
-      end
-         
-      def highlight_codeblock(el)
         puts "SB #{el.inspect}"
         nil
       end
