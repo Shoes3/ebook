@@ -19,10 +19,11 @@ Shoes.app :width => 800 do
           cfg = {}
           stack do 
             para "Pick the directory with your document .md files"
-            para "Save will create and populate and .ebook folder there",
-              "that you should save at each phase You also need to point",
-              "to the top level github menu document like Home.md or README.md"
-            para "You also want to specify a Title"
+            para "Save will create an populate and .ebook folder there ",
+              "that you should save at each phase You can also to point ",
+              "to the top level github menu documents like Home.md if you have them"
+            para "You do want to specify a Title"
+            para "Custom icon is optional, but recommended"
             flow do
               para "Book Dir:"
               @ebook_dir = edit_line width: 400
@@ -41,6 +42,13 @@ Shoes.app :width => 800 do
                 para "Title     "
                 @ebook_title = edit_line width: 400
               end
+              flow do 
+                para "Your icon  "
+                @ebook_icon = edit_line width: 400
+                button "Select" do
+                  @ebook_icon.text = ask_open_file
+                end
+              end
               button "Save" do
                 if @ebook_dir.text == nil || @ebook_title == nil || @ebook_menu == nil
                   alert "You are missing something!"
@@ -49,6 +57,10 @@ Shoes.app :width => 800 do
                   cfg['nested'] = false
                   cfg['input_format'] = 'GFM'
                   cfg['book_title'] = ""
+                  cfg['icon'] = ""
+                  cfg['base_font'] = 'Coolvetica'
+                  cfg['have_nav'] = false
+                  cfg['syntax_highlight'] = false
                   cfg['toc'] = {}
                   cfg['sections'] = {}
                   Dir.mkdir("#{dir}/.ebook") unless Dir.exist?("#{dir}/.ebook")
@@ -78,11 +90,14 @@ Shoes.app :width => 800 do
                       end
                     end
                   end
-                  cfg['toc']['root'] = File.basename(@ebook_menu.text)
+                  menu_name = @ebook_menu.text
+                  cfg['toc']['root'] = File.basename(menu_name)
+                  cfg['have_nav'] =  (menu_name) && (menu_name != '')
                   cfg['toc']['files'] = [] # TODO: may not need
                   cfg['nested'] = true if cfg['sections'].size > 1
                   cfg['book_title'] = @ebook_title.text
-          
+                  icon_fl = @ebook_icon.text
+                  cfg['icon'] = (icon_fl && icon_fl != '') ? icon_fl : "#{DIR}/static/app-icon.png"
                   # clean up on aisle 10 - remove toc document 
                   tocfn = cfg['toc']['root']
                   #puts "cleaning find #{tocfn}"

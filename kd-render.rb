@@ -139,7 +139,7 @@ module Kramdown
         ##puts h.call(self, el.value, el.attr['class'], :span)
         #puts syntax_highlighter(self, el.value, el.attr['class'], :span)
         puts "SB #{el.inspect}"
-        nil
+        nil # until it's ready for Shoes to eval it.
       end
          
       def convert_strong(el)
