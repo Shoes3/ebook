@@ -16,11 +16,10 @@ module Shoes::Ebook
   end
 
   
-  # TODO: This will be moved to a separate script in the future as 'compile' phase of 
-  # ebook-builer where it will also pre-populate picky db
+  # TODO: This will be moved to a separate script in the future as a 'compile' phase of 
+  # ebook-builer where it will also pre-populate picky db. For now, we interpret, sort of
   # 
   def load_docs(cfg)
-    
     # need a structure to hold the generated Shoes code
     #@search = Search.new
     #@sections, @methods, @mindex = {}, {}, {}
@@ -41,36 +40,39 @@ module Shoes::Ebook
           cfg['link_hash'][fl] = landing
         end
       end
-    elsif cfg['nested'] 
-      cfg['toc']['section_order'].each_index do |si|
-        sect_name = cfg['toc']['section_order'][si]
-        puts "going into #{sect_name}"
-        sect_intro = cfg['toc']['files'][si] 
-        # do we want to parse this and display it? I think yes but not until
-        # we can test many other things that can invalidate the whole project
-        sect = cfg['sections'][sect_name] # this is a hash
-        sect['display_order'].each do |fl|
-          puts "render #{cfg['doc_home']}/#{cfg[sect]}/#{fl}"
-          #render_file(cfg, "#{cfg['doc_home']}/#{cfg[sect]}", fl)
-        end
-      end
-    else
-      # One 1 chapter/section , many files possible, with one nav menu
-      # parse the root doc. (nav menu)
+    elsif cfg['nested']  # full monty
       toc_root_fl = cfg['toc']['root']
       top_c = render_file(cfg, cfg['toc']['section_order'][0], cfg['doc_home'], toc_root_fl)
       landing = {title: toc_root_fl, code: top_c}
-
       cfg['toc']['files'] = [ toc_root_fl]
       cfg['code_struct'] <<  landing
       cfg['link_hash'][toc_root_fl] = landing
       cfg['toc']['section_order'].each_index do |si|
         sect_name = cfg['toc']['section_order'][si]
         puts "going into #{sect_name}"
+        sect_intro = cfg['toc']['files'][si] 
+        sect = cfg['sections'][sect_name] # this is a hash
+        sect['display_order'].each do |fl|
+          puts "render #{cfg['doc_home']}/#{cfg[sect]}/#{fl}"
+          #render_file(cfg, "#{cfg['doc_home']}/#{cfg[sect]}", fl)
+        end
+      end
+    else    # have_nav == true && nested == false
+      # One 1 chapter/section , many files possible, with one nav menu
+      # parse the root doc. (nav menu)
+      toc_root_fl = cfg['toc']['root']
+      top_c = render_file(cfg, cfg['toc']['section_order'][0], cfg['doc_home'], toc_root_fl)
+      landing = {title: toc_root_fl, code: top_c}
+      cfg['toc']['files'] = [ toc_root_fl]
+      cfg['code_struct'] <<  landing
+      cfg['link_hash'][toc_root_fl] = landing
+      cfg['toc']['section_order'].each_index do |si|
+        sect_name = cfg['toc']['section_order'][si]
+        #puts "going into #{sect_name}"
         sect = cfg['sections'][sect_name] # this is a hash
         sect['intro'] = toc_root_fl
         sect[:display_order].each do |fl|
-          puts "render #{cfg['doc_home']}/#{fl}"
+          #puts "render #{cfg['doc_home']}/#{fl}"
           contents = render_file(cfg, sect_name, cfg['doc_home'], fl)
           landing = {title: fl, code: contents}
           cfg['code_struct'] << landing

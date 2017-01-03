@@ -74,7 +74,32 @@ module Kramdown
       end
          
       def convert_header(el)
-        %{para(strong("#{el.options[:raw_text]}\n"), :margin_left => 6, :margin_right => gutter)}
+        #%{para(strong("#{el.options[:raw_text]}\n"), :margin_left => 6, :margin_right => gutter)}
+        hlevel = el.options[:level]
+        txt = el.options[:raw_text]
+        case hlevel
+        when 1
+          #puts "header 1 #{txt}"
+          %{para(strong("#{txt}"), :size => 22, :margin_left => 6, :margin_right => gutter)}
+        when 2 
+          #puts "header 2 #{txt}"
+          %{para(strong("#{txt}"), :size => 18, :margin_left => 6, :margin_right => gutter)}
+        when 3
+          #puts "header 3 #{txt}"
+          %{para(strong("#{txt}"), :size => 14, :margin_left => 6, :margin_right => gutter)}
+        when 4
+          #puts "header 4 #{txt}"
+          %{para(strong("#{txt}"), :size => 12, :margin_left => 6, :margin_right => gutter)}
+        when 5
+          #puts "header 5 #{txt}"
+          %{para(strong("#{txt}"), :size => 10, :margin_left => 6, :margin_right => gutter)}
+        when 6
+          #puts "header 6 #{txt}"
+          %{para(strong("#{txt}"), :size => 8, :margin_left => 6, :margin_right => gutter)}
+        else
+          puts "header default"
+          %{para(strong("#{txt}"), :margin_left => 6, :margin_right => gutter)}
+        end
       end
          
       def convert_p(el)
