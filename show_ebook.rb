@@ -20,13 +20,28 @@ module Shoes::Ebook
   # ebook-builer where it will also pre-populate picky db
   # 
   def load_docs(cfg)
-    puts "load_docs nested?  #{cfg['nested']}"
+    
     # need a structure to hold the generated Shoes code
-    @search = Search.new
-    @sections, @methods, @mindex = {}, {}, {}
+    #@search = Search.new
+    #@sections, @methods, @mindex = {}, {}, {}
     cfg['link_hash'] = {}
     cfg['code_struct'] = []  # array of hashes
-    if cfg['nested'] # what's difference between 'display_order' and :display_order ?
+    if cfg['have_nav'] == false 
+      # a very simple ebook
+      cfg['toc']['section_order'].each_index do |si|
+        sect_name = cfg['toc']['section_order'][si]
+        puts "going into #{sect_name}"
+        sect = cfg['sections'][sect_name] # this is a hash
+        sect['intro'] = sect[:display_order][0]
+        sect[:display_order].each do |fl|
+          puts "render #{cfg['doc_home']}/#{fl} #{sect['intro']}"
+          contents = render_file(cfg, sect_name, cfg['doc_home'], fl)
+          landing = {title: fl, code: contents}
+          cfg['code_struct'] << landing
+          cfg['link_hash'][fl] = landing
+        end
+      end
+    elsif cfg['nested'] 
       cfg['toc']['section_order'].each_index do |si|
         sect_name = cfg['toc']['section_order'][si]
         puts "going into #{sect_name}"
@@ -49,7 +64,6 @@ module Shoes::Ebook
       cfg['toc']['files'] = [ toc_root_fl]
       cfg['code_struct'] <<  landing
       cfg['link_hash'][toc_root_fl] = landing
-      cfg['have_nav'] = true;  # TODO: check don't set
       cfg['toc']['section_order'].each_index do |si|
         sect_name = cfg['toc']['section_order'][si]
         puts "going into #{sect_name}"
@@ -116,8 +130,8 @@ module Shoes::Ebook
         tocr = cfg['toc']['root']
         code = cfg['link_hash'][tocr][:code]
       else # no cfg/toc/root, just pick the first one. Perhaps the only one.
-        sect_nm = cfg['sections_order'][0]
-        fn = cfg['sections'][sect_nm]['display_order'][0]
+        sect_nm = cfg['toc']['section_order'][0]
+        fn = cfg['sections'][sect_nm][:display_order][0]
         code = cfg['link_hash'][fn][:code]
       end
       draw_ruby code
@@ -284,8 +298,12 @@ module Shoes::Ebook
             :size => 7, :align => "center", :stroke => "#999"
         end
       end
+      # setup the icon
+      icon_png = "#{DIR}/static/app-icon.png"
+      icon_png = @@cfg['icon'] if @@cfg['icon']
       image :width => 120, :height => 120, :top => -18, :left => 6 do
-        image "#{DIR}/static/app-icon.png", :width => 100, :height => 100, :top => 10, :left => 10 
+        #image "#{DIR}/static/app-icon.png", :width => 100, :height => 100, :top => 10, :left => 10 
+        image icon_png, :width => 85, :height => 85, :top => 18, :left => 10 
         glow 2
       end
     end

@@ -187,7 +187,7 @@ Shoes.app :width => 800 do
                 end
                 
                 # Process the toc/menu documents if available and github nested
-                if cfg['toc']['root'] # && cfg['nested'] == true
+                if cfg['toc']['root'] && cfg['have_nav']
                   @menu_list = []
                   Dir.chdir(cfg['doc_home']) do |p|
                     f = "#{p}/#{cfg['toc']['root']}"
@@ -235,6 +235,7 @@ Shoes.app :width => 800 do
                   end
                 else
                   # TODO: we need to do better perhaps set section_order
+                  @err_box.append("Done - You can save if you want\n")
                   puts "no toc to deal with, faking it"
                 end
               end
