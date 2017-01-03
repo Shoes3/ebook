@@ -65,7 +65,7 @@ module Kramdown
       end
          
       def convert_blank(el)
-        %{para("\n")}
+        #%{para("\n")}
       end
          
       def convert_text(el)
