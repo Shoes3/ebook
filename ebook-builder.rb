@@ -220,9 +220,9 @@ Shoes.app :width => 800 do
                       pre_toc = Kramdown::Document.new(File.read("#{d}/#{f}", encoding: "UTF-8"),
                           { menu_list: @menu_list, input: cfg['input_format']
                           }).to_menuparse
-                      cfg['sections'][d]['display_order'] = []
+                      cfg['sections'][d][:display_order] = []
                       @menu_list.each do |md|
-                        cfg['sections'][d]['display_order'] << md
+                        cfg['sections'][d][:display_order] << md
                         pos = cfg['sections'][d][:files].find_index(md)
                         if pos
                           cfg['sections'][d][:files].delete_at(pos)

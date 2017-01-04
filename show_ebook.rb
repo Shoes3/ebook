@@ -40,23 +40,41 @@ module Shoes::Ebook
           cfg['link_hash'][fl] = landing
         end
       end
-    elsif cfg['nested']  # full monty
+    elsif cfg['nested']  # have_nav == true and nested == true ==> Full Monty
       toc_root_fl = cfg['toc']['root']
       top_c = render_file(cfg, cfg['toc']['section_order'][0], cfg['doc_home'], toc_root_fl)
       landing = {title: toc_root_fl, code: top_c}
-      cfg['toc']['files'] = [ toc_root_fl]
+      #cfg['toc']['files'] = [ toc_root_fl]
       cfg['code_struct'] <<  landing
       cfg['link_hash'][toc_root_fl] = landing
+      # parse Toc files and hook the generated code into the cfg
+      # BEWARE of assumptions
+      # TODO: a toc doc could have images - we might not handle that
+      cfg['toc']['section_order'].each_index do |si|
+        nav_fl = cfg['toc']['files'][si]
+        sect_name = cfg['toc']['section_order'][si]
+        sect = cfg['sections'][sect_name]
+        tcontents  = render_file(cfg, sect_name, "#{cfg['doc_home']}/#{sect_name}", nav_fl)
+        tlanding = {title: nav_fl, code: tcontents}
+        cfg['code_struct'] << tlanding
+        cfg['link_hash'][nav_fl] = tlanding
+        sect['intro'] = nav_fl
+        puts "created 'intro' for nav_#{nav_fl} for section #{sect_name}"
+      end
+      
       cfg['toc']['section_order'].each_index do |si|
         sect_name = cfg['toc']['section_order'][si]
         puts "going into #{sect_name}"
-        sect_intro = cfg['toc']['files'][si] 
-        sect = cfg['sections'][sect_name] # this is a hash
-        sect['display_order'].each do |fl|
-          puts "render #{cfg['doc_home']}/#{cfg[sect]}/#{fl}"
-          #render_file(cfg, "#{cfg['doc_home']}/#{cfg[sect]}", fl)
+        sect = cfg['sections'][sect_name]
+        sect[:display_order].each do |fl|
+          puts "render #{cfg['doc_home']}/#{cfg[sect]}/#{sect_name}/#{fl}"
+          contents = render_file(cfg, sect_name, "#{cfg['doc_home']}/#{sect_name}", fl)
+          landing = {title: fl, code: contents}
+          cfg['code_struct'] << landing
+          cfg['link_hash'][fl] = landing
         end
       end
+      puts "Code for keys #{cfg['link_hash'].keys}"
     else    # have_nav == true && nested == false
       # One 1 chapter/section , many files possible, with one nav menu
       # parse the root doc. (nav menu)
@@ -68,8 +86,7 @@ module Shoes::Ebook
       cfg['link_hash'][toc_root_fl] = landing
       cfg['toc']['section_order'].each_index do |si|
         sect_name = cfg['toc']['section_order'][si]
-        #puts "going into #{sect_name}"
-        sect = cfg['sections'][sect_name] # this is a hash
+        sect = cfg['sections'][sect_name] 
         sect['intro'] = toc_root_fl
         sect[:display_order].each do |fl|
           #puts "render #{cfg['doc_home']}/#{fl}"
