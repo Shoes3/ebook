@@ -17,12 +17,10 @@ module Shoes::Ebook
 
   
   # TODO: This will be moved to a separate script in the future as a 'compile' phase of 
-  # ebook-builer where it will also pre-populate picky db. For now, we interpret, sort of
+  # ebook-builder where it will also pre-populate picky db. For now, we interpret, sort of
   # 
   def load_docs(cfg)
     # need a structure to hold the generated Shoes code
-    #@search = Search.new
-    #@sections, @methods, @mindex = {}, {}, {}
     cfg['link_hash'] = {}
     cfg['code_struct'] = []  # array of hashes
     if cfg['have_nav'] == false 
@@ -160,26 +158,34 @@ module Shoes::Ebook
     File.basename(fl, ".*").gsub(/\-/,' ')
   end
   
-  # this gets called when there is Shoes codeblock/span to display
-  def render_code(str)
-    str.strip!
-    stack :margin_bottom => 12 do 
-      background rgb(210, 210, 210), :curve => 4
-      para code(str), {:size => 9, :margin => 12}
-      stack :top => 0, :right => 2, :width => 70 do
-        rnts = stack do
-          background "#8A7", :margin => [0, 2, 0, 2], :curve => 4 
-          para link("Run this", :stroke => "#eee", :underline => "none") { eval(str, binding) },
-            :margin => 4, :align => 'center', :weight => 'bold', :size => 9
-        end
-        rnts.hide if str.match(/Shoes\.app|alert|confirm|ask|info|warn|debug/).nil?
-        stack do
-          background "#8A7", :margin => [0, 2, 0, 2], :curve => 4 
-          para link("Copy this", :stroke => "#eee", :underline => "none") { self.clipboard = str },
-            :margin => 4, :align => 'center', :weight => 'bold', :size => 9
+  # this gets called when there is Shoes codeblock to display
+  # And possibly execute
+  def render_code(exe_str, display_str = nil)
+    display_string = exe_str if ! display_str 
+    exe_str.strip!
+    can_exec = exe_str.match(/^(Shoes\.app|alert|confirm|ask|info|warn|debug)/)
+    can_exec = false
+    puts "can exec #{can_exec} #{exe_str}"
+    if can_exec
+      stack :margin_bottom => 12 do 
+        background rgb(210, 210, 210), :curve => 4
+        para display_str, {:size => 9, :margin => 12, :font => 'monospace'}
+        stack :top => 0, :right => 2, :width => 70 do
+          rnts = stack do
+            background "#8A7", :margin => [0, 2, 0, 2], :curve => 4 
+            para link("Run this", :stroke => "#eee", :underline => "none") { eval(exe_str, binding) },
+              :margin => 4, :align => 'center', :weight => 'bold', :size => 9
+          end
         end
       end
+      #rnts.hide if str.match(/Shoes\.app|alert|confirm|ask|info|warn|debug/).nil?
+      stack do
+        background "#8A7", :margin => [0, 2, 0, 2], :curve => 4 
+        para link("Copy this", :stroke => "#eee", :underline => "none") { self.clipboard = exe_str },
+          :margin => 4, :align => 'center', :weight => 'bold', :size => 9
+      end
     end
+    return nil
   end
   
   def Shoes.make_ebook(test = false)
