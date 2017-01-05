@@ -159,12 +159,12 @@ module Kramdown
          
       # TODO: syntax highlight not working (no errors - just doesn't return anything)
       def highlight_codeblock(el)
-        ##puts highlight_code(el.value, el.attr['class'], :span)
-        ##h = ::Kramdown::Converter.syntax_highlighter(@options[:syntax_highlighter])
-        ##puts h.call(self, el.value, el.attr['class'], :span)
+        #puts highlight_code(el.value, el.attr['class'], :span)
+        #h = ::Kramdown::Converter.syntax_highlighter(@options[:syntax_highlighter])
+        #puts h.call(self, el.value, el.attr['class'], :span)
         #puts syntax_highlighter(self, el.value, el.attr['class'], :span)
         puts "SB #{el.inspect}"
-        nil # until it's ready for Shoes to eval it.
+        nil # until it's ready for Shoes to eval it. 
       end
          
       def convert_strong(el)
@@ -186,7 +186,7 @@ module Kramdown
           #puts "found local image #{lcl}"
           %[image "#{@cfg['doc_home']}/.ebook/images/#{lcl}"]
         else
-          puts "Bad Boy! sucking images from #{url}"
+          puts "Bad Boy! Don't suck images from #{url}"
           %[image "{#url}"]
         end
       end

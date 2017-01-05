@@ -60,7 +60,7 @@ Shoes.app :width => 800 do
                   cfg['icon'] = ""
                   cfg['base_font'] = 'Coolvetica'
                   cfg['have_nav'] = false
-                  cfg['syntax_highlight'] = false
+                  cfg['syntax_highlight'] = true # true until render_code is working
                   cfg['toc'] = {}
                   cfg['sections'] = {}
                   Dir.mkdir("#{dir}/.ebook") unless Dir.exist?("#{dir}/.ebook")
@@ -159,25 +159,14 @@ Shoes.app :width => 800 do
                              menu_list: @menu_list, input: cfg['input_format']
                           }).to_preprocess
                     end
+                    # note all images are in one dir (it's the github way)
                     Dir.chdir(".ebook/images") do
                       here = Dir.getwd
-                      # Grr
-                      if cfg['nested'] 
-                        @image_hash.each do |k, v| 
-                          next if File.exists?("#{here}/#{d}/#{v}")
-                          if confirm "Download to #{here}/#{d}/#{v}"
-                            Dir.mkdir(d) if !Dir.exists?(d)
-                            download k, save: "#{d}/#{v}"
-                            @err_box.append("downloaded #{d}/#{v} <- #{k}\n")
-                          end
-                        end
-                      else
-                        @image_hash.each do |k, v| 
-                          next if File.exists?("#{here}/#{v}")
-                          if confirm "Download to #{here}/#{v}"
-                            download k, save: "#{here}/#{v}"
-                            @err_box.append("downloaded #{here}/#{v} <- #{k}\n")
-                          end
+                      @image_hash.each do |k, v| 
+                        next if File.exists?("#{here}/#{v}")
+                        if confirm "Download to #{here}/#{v}"
+                          download k, save: "#{here}/#{v}"
+                          @err_box.append("downloaded #{here}/#{v} <- #{k}\n")
                         end
                       end
                     end
@@ -191,7 +180,7 @@ Shoes.app :width => 800 do
                   @menu_list = []
                   Dir.chdir(cfg['doc_home']) do |p|
                     f = "#{p}/#{cfg['toc']['root']}"
-                    puts "process toc #{f}"
+                    #puts "process toc #{f}"
                     pre_toc = Kramdown::Document.new(File.read(f, encoding: "UTF-8"),
                           { menu_list: @menu_list, input: cfg['input_format']
                           }).to_menuparse
@@ -204,7 +193,7 @@ Shoes.app :width => 800 do
                         sect_files = cfg['sections'][sect_k][:files]
                         pos = sect_files.find_index(md)
                         if pos 
-                          puts "Found #{md} in #{sect_k}"
+                          #puts "Found #{md} in #{sect_k}"
                           cfg['toc']['section_order'] << sect_k
                           cfg['toc']['files'] << md
                           sect_files.delete_at(pos)

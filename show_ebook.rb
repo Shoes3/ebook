@@ -102,13 +102,14 @@ module Shoes::Ebook
   
   
   # open/close sections aka chapters on the sidebar due to click
-  # these are the toc nav files !
-  # sect is 
+  # these are the toc nav files names attached to a stack
+  # 
   def open_sidebar(cfg, sect)
     #visited(sect_s)
     #sect_h = @sections[sect_s]
     #sect_cls = sect_h['class']
     #@toc.each { |k,v| v.send(k == sect_cls ? :show : :hide) }
+    @toc.each { |k, v| v.send(k == sect[:title] ? :show : :hide) }
     #@title.replace sect_s
     #@doc.clear(&dewikify_hi(sect_h['description'], terms, true)) 
     @title.replace sect[:title]
@@ -117,8 +118,6 @@ module Shoes::Ebook
     end
     #add_next_link(@docs.index { |x,| x == sect_s }, -1) rescue nil
     app.slot.scroll_top = 0
-    
-    
   end
   
   def draw_ruby(e)
@@ -184,11 +183,21 @@ module Shoes::Ebook
   end
   
   def Shoes.make_ebook(test = false)
-    font "fonts/Coolvetica.ttf" unless Shoes::FONTS.include? "Coolvetica"
     # load the yaml and see what we have for a TOC and settings
     #   we need to do a lot in our load_doc including the kramdown generation
     #   and toc building
     @@cfg = YAML.load_file('shoes_ebook.yaml')
+    if @@cfg['base_font']
+      newfont = @@cfg['base_font']
+      if  Shoes::FONTS.include? newfont
+        puts "Setting font to #{newfont}"
+        font newfont
+      else 
+        puts "Cannot find #{newfont}"
+      end
+    else 
+      font "fonts/Coolvetica.ttf" unless Shoes::FONTS.include? "Coolvetica"
+    end
     if !test 
       @@cfg['doc_home'] = "#{DIR}/ebook" #  ebook dir created by the packaging
     end
