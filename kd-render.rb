@@ -155,10 +155,10 @@ module Kramdown
         exe_str = nil
         display_str = nil
         if str[/Shoes\.app/]
-          puts 'code is good:'
+          puts 'code is excutable:'
           exe_str = str
         else 
-          puts "code is bad: #{str}"
+          puts "code can't be run: #{str}"
           return %Q[render_copy(#{el.value.inspect})]
         end
         if @cfg['syntax_highlight']
@@ -166,7 +166,7 @@ module Kramdown
           #return highlight_codeblock el
         end
         #%[render_code(%{#{el.value}})]
-        %[render_code(%{#{exe_str}}, %{#{display_str}})]
+        %Q[render_code(#{el.value.inspect}, #{display_str})]
       end
          
       # TODO: syntax highlight not working (no errors - just doesn't return anything)

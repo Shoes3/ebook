@@ -166,30 +166,28 @@ module Shoes::Ebook
   # this gets called when there is Shoes codeblock to display
   # And possibly execute
   def render_code(exe_str, display_str = nil)
-    puts "exe_str: #{exe_str}"
-    return true
-    display_string = exe_str if ! display_str 
-    exe_str.strip!
-    can_exec = exe_str.match(/(Shoes\.app|alert|confirm|ask|info|warn|debug)/)
-    can_exec = false
-    puts "can exec #{can_exec} #{exe_str}"
-    if can_exec
-      stack :margin_bottom => 12 do 
-        background rgb(210, 210, 210), :curve => 4
-        para display_str, {:size => 9, :margin => 12, :font => 'monospace'}
-        stack :top => 0, :right => 2, :width => 70 do
-          rnts = stack do
+    dsp_str = nil
+    if !display_str 
+      dsp_str = exe_str
+    else
+      dsp_str = display_str
+    end
+    dsp_str.strip!
+    puts "exe_str: #{dsp_str}"
+    stack :margin_bottom => 12 do 
+      background rgb(210, 210, 210), :curve => 4
+      para dsp_str, {:size => 9, :margin => 12, :font => 'monospace'}
+      stack :top => 0, :right => 2, :width => 70 do
+        stack do
+          background "#8A7", :margin => [0, 2, 0, 2], :curve => 4 
+          para link("Run this", :stroke => "#eee", :underline => "none") { eval(exe_str, binding) },
+            :margin => 4, :align => 'center', :weight => 'bold', :size => 9
+          stack :top => 0, :right => 2, :width => 70 do
             background "#8A7", :margin => [0, 2, 0, 2], :curve => 4 
-            para link("Run this", :stroke => "#eee", :underline => "none") { eval(exe_str, binding) },
+            para link("Copy this", :stroke => "#eee", :underline => "none") { self.clipboard = exe_str },
               :margin => 4, :align => 'center', :weight => 'bold', :size => 9
           end
         end
-      end
-      #rnts.hide if str.match(/Shoes\.app|alert|confirm|ask|info|warn|debug/).nil?
-      stack :top => 0, :right => 2, :width => 70 do
-        background "#8A7", :margin => [0, 2, 0, 2], :curve => 4 
-        para link("Copy this", :stroke => "#eee", :underline => "none") { self.clipboard = exe_str },
-          :margin => 4, :align => 'center', :weight => 'bold', :size => 9
       end
     end
   end
