@@ -119,7 +119,12 @@ module Shoes::Ebook
   end
   
   def draw_ruby(e)
-   e.kind_of?(Array) ? (e.each { |n| rendering(n) }) : (instance_eval e unless e.nil?)
+   begin 
+     e.kind_of?(Array) ? (e.each { |n| rendering(n) }) : (instance_eval e unless e.nil?)
+   rescue => e
+   puts e.inspect
+     puts "code is: #{e}"
+   end
   end
   
   # 
@@ -161,9 +166,11 @@ module Shoes::Ebook
   # this gets called when there is Shoes codeblock to display
   # And possibly execute
   def render_code(exe_str, display_str = nil)
+    puts "exe_str: #{exe_str}"
+    return true
     display_string = exe_str if ! display_str 
     exe_str.strip!
-    can_exec = exe_str.match(/^(Shoes\.app|alert|confirm|ask|info|warn|debug)/)
+    can_exec = exe_str.match(/(Shoes\.app|alert|confirm|ask|info|warn|debug)/)
     can_exec = false
     puts "can exec #{can_exec} #{exe_str}"
     if can_exec
@@ -179,13 +186,27 @@ module Shoes::Ebook
         end
       end
       #rnts.hide if str.match(/Shoes\.app|alert|confirm|ask|info|warn|debug/).nil?
-      stack do
+      stack :top => 0, :right => 2, :width => 70 do
         background "#8A7", :margin => [0, 2, 0, 2], :curve => 4 
         para link("Copy this", :stroke => "#eee", :underline => "none") { self.clipboard = exe_str },
           :margin => 4, :align => 'center', :weight => 'bold', :size => 9
       end
     end
-    return nil
+  end
+  
+  # just display the codeblock in a fancy stack and add a copy button
+  # if display_string provided it's been syntax highlighted
+  def render_copy(code_str, display_str = nil)
+    display_str = code_str if !display_str 
+    stack :margin_bottom => 12 do 
+      background rgb(210, 210, 210), :curve => 4
+      para display_str, {:size => 9, :margin => 12, :font => 'monospace'}
+      stack :top => 0, :right => 2, :width => 70 do
+        background "#8A7", :margin => [0, 2, 0, 2], :curve => 4 
+        para link("Copy this", :stroke => "#eee", :underline => "none") { self.clipboard = code_str },
+          :margin => 4, :align => 'center', :weight => 'bold', :size => 9
+      end
+    end
   end
   
   def Shoes.make_ebook(test = false)
@@ -207,11 +228,10 @@ module Shoes::Ebook
     if !test 
       @@cfg['doc_home'] = "#{DIR}/ebook" #  ebook dir created by the packaging
     end
-    #puts "render this #{@cfg['doc_home']}"
+   
     book_title = @@cfg['book_title']
     proc do
       extend Shoes::Ebook
-      load_docs(@@cfg)
 
       style(Shoes::Image, :margin => 8, :margin_left => 100)
       style(Shoes::Code, :stroke => "#C30")
@@ -220,6 +240,12 @@ module Shoes::Ebook
       style(Shoes::Tagline, :size => 12, :weight => "bold", :stroke => "#eee", :margin => 6)
       style(Shoes::Caption, :size => 24)
       background "#ddd".."#fff", :angle => 90
+      if @@cfg['base_font'] 
+        [Shoes::LinkHover, Shoes::Para, Shoes::Tagline, Shoes::Caption].each do |type|
+          style(type, :font => @@cfg['base_font'])
+        end
+      end
+      load_docs(@@cfg)
       
       [Shoes::LinkHover, Shoes::Para, Shoes::Tagline, Shoes::Caption].each do |type|
         style(type, :font => "MS UI Gothic")

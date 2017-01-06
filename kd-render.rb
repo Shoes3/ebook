@@ -150,11 +150,23 @@ module Kramdown
       end
       
       def convert_codeblock (el)
-        # This is a convoluted approach, suggest to find an alternative.
-        if @cfg['syntax_highlight']
-          return highlight_codeblock el
+        # More crazy logic?
+        str = el.value
+        exe_str = nil
+        display_str = nil
+        if str[/Shoes\.app/]
+          puts 'code is good:'
+          exe_str = str
+        else 
+          puts "code is bad: #{str}"
+          return %Q[render_copy(#{el.value.inspect})]
         end
-        %[render_code(%{#{el.value}})]
+        if @cfg['syntax_highlight']
+          # do the hightling in 'str' save results in 'display_str'
+          #return highlight_codeblock el
+        end
+        #%[render_code(%{#{el.value}})]
+        %[render_code(%{#{exe_str}}, %{#{display_str}})]
       end
          
       # TODO: syntax highlight not working (no errors - just doesn't return anything)
