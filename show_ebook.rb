@@ -9,6 +9,7 @@ module Shoes::Ebook
         { :syntax_highlighter => "rouge",
           :syntax_highlighter_opts => { css_class: false, line_numbers: false, inline_theme: "github" },
           cfg: cfg, chapter: sect_nm, input: cfg['input_format'], hard_wrap: false,
+          #cfg: cfg, chapter: sect_nm, input: 'GfmLink', hard_wrap: false,
           gfm_quirk: []
         }
       ).to_shoes
@@ -166,27 +167,23 @@ module Shoes::Ebook
   # this gets called when there is Shoes codeblock to display
   # And possibly execute
   def render_code(exe_str, display_str = nil)
-    dsp_str = nil
-    if !display_str 
-      dsp_str = exe_str
-    else
-      dsp_str = display_str
-    end
+    dsp_str = display_str
+    dsp_str = exe_str if !display_str
     dsp_str.strip!
-    puts "exe_str: #{dsp_str}"
+    #puts "exe_str: #{exe_str}"
     stack :margin_bottom => 12 do 
       background rgb(210, 210, 210), :curve => 4
       para dsp_str, {:size => 9, :margin => 12, :font => 'monospace'}
       stack :top => 0, :right => 2, :width => 70 do
         stack do
           background "#8A7", :margin => [0, 2, 0, 2], :curve => 4 
-          para link("Run this", :stroke => "#eee", :underline => "none") { eval(exe_str, binding) },
+          para link("Run this", :stroke => "#eee", :underline => "none") { eval(exe_str, TOPLEVEL_BINDING) },
             :margin => 4, :align => 'center', :weight => 'bold', :size => 9
-          stack :top => 0, :right => 2, :width => 70 do
-            background "#8A7", :margin => [0, 2, 0, 2], :curve => 4 
-            para link("Copy this", :stroke => "#eee", :underline => "none") { self.clipboard = exe_str },
-              :margin => 4, :align => 'center', :weight => 'bold', :size => 9
-          end
+        end
+        stack :top => 0, :right => 2, :width => 70 do
+          background "#8A7", :margin => [0, 2, 0, 2], :curve => 4 
+          para link("Copy this", :stroke => "#eee", :underline => "none") { self.clipboard = exe_str },
+            :margin => 4, :align => 'center', :weight => 'bold', :size => 9
         end
       end
     end
@@ -230,7 +227,6 @@ module Shoes::Ebook
     book_title = @@cfg['book_title']
     proc do
       extend Shoes::Ebook
-
       style(Shoes::Image, :margin => 8, :margin_left => 100)
       style(Shoes::Code, :stroke => "#C30")
       style(Shoes::LinkHover, :stroke => green, :fill => nil)

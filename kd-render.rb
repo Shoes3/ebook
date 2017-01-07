@@ -39,6 +39,24 @@ module Rouge
 end
 
 module Kramdown
+  module Parser
+    class GfmLink < Kramdown::Parser::GFM
+      def initialize(*doc)
+        super
+        @block_parsers.unshift(:gfmlink)
+      end
+         
+      GFMLINK_START = /\[\[(.*?)\]\]/u
+         
+      def parse_gfmlink
+        @src.pos += @src.matched_size
+        el = Element.new(:gfmlink, nil, {'gfmlink' => @src[1]})
+        @tree.children << el
+      end
+      define_parser(:gfmlink, GFMLINK_START, '\[\[')
+    end
+  end
+  
   module Converter
     class Shoes < Base
       ##include ShoesRouge
@@ -133,6 +151,7 @@ module Kramdown
       end
          
       def convert_a(el)
+        #puts "convert a called #{el.inspect}"
         results = []
         el.children.each do |inner_el|
           results << inner_el.value if inner_el.type.eql?(:text)
@@ -155,14 +174,14 @@ module Kramdown
         exe_str = nil
         display_str = nil
         if str[/Shoes\.app/]
-          puts 'code is excutable:'
+          #puts "code is excutable: #{el.value}"
           exe_str = str
         else 
-          puts "code can't be run: #{str}"
+          #puts "code can't be run: #{str}"
           return %Q[render_copy(#{el.value.inspect})]
         end
         if @cfg['syntax_highlight']
-          # do the hightling in 'str' save results in 'display_str'
+          # do the hightling of 'exe_str' save results in 'display_str'
           #return highlight_codeblock el
         end
         #%[render_code(%{#{el.value}})]
@@ -201,6 +220,12 @@ module Kramdown
           puts "Bad Boy! Don't suck images from #{url}"
           %[image "{#url}"]
         end
+      end
+      
+      def convert_gfmlink(el)
+        #puts "gfm_link: #{el.inspect}"
+        str =  el.attr['gfmlink']
+        %[para(link("#{str}"))]
       end
   
       def convert_typographic_sym(el)

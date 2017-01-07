@@ -55,7 +55,7 @@ Shoes.app :width => 800 do
                 else
                   dir = cfg['doc_home'] = @ebook_dir.text
                   cfg['nested'] = false
-                  cfg['input_format'] = 'GFM'
+                  cfg['input_format'] = 'GfmLink'
                   cfg['book_title'] = ""
                   cfg['icon'] = ""
                   cfg['base_font'] = 'Coolvetica'
