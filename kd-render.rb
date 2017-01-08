@@ -223,9 +223,10 @@ module Kramdown
       end
       
       def convert_gfmlink(el)
-        #puts "gfm_link: #{el.inspect}"
         str =  el.attr['gfmlink']
-        %[para(link("#{str}"))]
+        #puts "gfmlink find: #{str}"
+        # defer to Run Time method to figure it where to go
+        %[para(link("#{str}") { show_link("#{str}")})]
       end
   
       def convert_typographic_sym(el)

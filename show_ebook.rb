@@ -28,11 +28,11 @@ module Shoes::Ebook
       # a very simple ebook
       cfg['toc']['section_order'].each_index do |si|
         sect_name = cfg['toc']['section_order'][si]
-        puts "going into #{sect_name}"
+        #puts "going into #{sect_name}"
         sect = cfg['sections'][sect_name] # this is a hash
         sect['intro'] = sect[:display_order][0]
         sect[:display_order].each do |fl|
-          puts "render #{cfg['doc_home']}/#{fl} #{sect['intro']}"
+          #puts "render #{cfg['doc_home']}/#{fl} #{sect['intro']}"
           contents = render_file(cfg, sect_name, cfg['doc_home'], fl)
           landing = {title: fl, code: contents}
           cfg['code_struct'] << landing
@@ -58,22 +58,22 @@ module Shoes::Ebook
         cfg['code_struct'] << tlanding
         cfg['link_hash'][nav_fl] = tlanding
         sect['intro'] = nav_fl
-        puts "created 'intro' for nav_#{nav_fl} for section #{sect_name}"
+        #puts "created 'intro' for nav_#{nav_fl} for section #{sect_name}"
       end
       
       cfg['toc']['section_order'].each_index do |si|
         sect_name = cfg['toc']['section_order'][si]
-        puts "going into #{sect_name}"
+        #puts "going into #{sect_name}"
         sect = cfg['sections'][sect_name]
         sect[:display_order].each do |fl|
-          puts "render #{cfg['doc_home']}/#{cfg[sect]}/#{sect_name}/#{fl}"
+          #puts "render #{cfg['doc_home']}/#{cfg[sect]}/#{sect_name}/#{fl}"
           contents = render_file(cfg, sect_name, "#{cfg['doc_home']}/#{sect_name}", fl)
           landing = {title: fl, code: contents}
           cfg['code_struct'] << landing
           cfg['link_hash'][fl] = landing
         end
       end
-      puts "Code for keys #{cfg['link_hash'].keys}"
+      #puts "Code for keys #{cfg['link_hash'].keys}"
     else    # have_nav == true && nested == false
       # One 1 chapter/section , many files possible, with one nav menu
       # parse the root doc. (nav menu)
@@ -163,6 +163,18 @@ module Shoes::Ebook
   def clean_name(fl)
     File.basename(fl, ".*").gsub(/\-/,' ')
   end
+
+  # ---- begin runtime support - called from the rendered code for more
+  #      complex operations
+  # ----
+  
+  # here when a click on converted [[link]]
+  def show_link(str)
+    cfg = @@cfg
+    str.gsub!(' ','-')
+    str << '.md'
+    show_doc(cfg, str)
+  end
   
   # this gets called when there is Shoes codeblock to display
   # And possibly execute
@@ -204,21 +216,22 @@ module Shoes::Ebook
     end
   end
   
+  # ---- end runtime support section
+  
   def Shoes.make_ebook(test = false)
+    #puts "DIR = #{DIR}"
+    font "#{DIR}/fonts/Lacuna.ttf" unless Shoes::FONTS.include? "Lacuna"
+    font "#{DIR}/fonts/Coolvetica.ttf" unless Shoes::FONTS.include? "Coolvetica"
     # load the yaml and see what we have for a TOC and settings
     #   we need to do a lot in our load_doc including the kramdown generation
-    #   and toc building
+    #   and toc building - will change when we compile.
     @@cfg = YAML.load_file('shoes_ebook.yaml')
-    if @@cfg['base_font']
-      newfont = @@cfg['base_font']
-      if  Shoes::FONTS.include? newfont
-        puts "Setting font to #{newfont}"
-        font newfont
-      else 
-        puts "Cannot find #{newfont}"
-      end
-    else 
-      font "fonts/Coolvetica.ttf" unless Shoes::FONTS.include? "Coolvetica"
+    userfont = @@cfg['base_font']
+    if userfont && (! Shoes::FONTS.include? userfont)
+      error("Unknown font name: #{userfont}")
+      userfont = nil # so it still works
+      alert ("Author asked for an unknown font_name: #{@@cfg['base_font']}")
+      
     end
     if !test 
       @@cfg['doc_home'] = "#{DIR}/ebook" #  ebook dir created by the packaging
@@ -234,9 +247,9 @@ module Shoes::Ebook
       style(Shoes::Tagline, :size => 12, :weight => "bold", :stroke => "#eee", :margin => 6)
       style(Shoes::Caption, :size => 24)
       background "#ddd".."#fff", :angle => 90
-      if @@cfg['base_font'] 
+      if userfont
         [Shoes::LinkHover, Shoes::Para, Shoes::Tagline, Shoes::Caption].each do |type|
-          style(type, :font => @@cfg['base_font'])
+          style(type, :font => userfont)
         end
       end
       load_docs(@@cfg)
@@ -326,7 +339,7 @@ module Shoes::Ebook
           
           # TODO: Again, 'nested' raises it's pointy head and it's not smiling
           @@cfg['toc']['section_order'].each do |sect_nm| 
-            puts "Create menu for #{sect_nm} in #{@@cfg['toc']['section_order']}"
+            #puts "Create menu for #{sect_nm} in #{@@cfg['toc']['section_order']}"
             sect = @@cfg['sections'][sect_nm]
             #puts "section #{sect.inspect}"
             title = sect[:title]

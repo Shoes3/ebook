@@ -2,7 +2,7 @@
 require 'yaml'
 Shoes.app :width => 800 do
   yaml_fl = ARGV[1]
-  puts "yaml file #{yaml_fl}"
+  #puts "yaml file #{yaml_fl}"
   cfg = {}
   if yaml_fl
     cfg = YAML.load_file(yaml_fl)
@@ -58,7 +58,7 @@ Shoes.app :width => 800 do
                   cfg['input_format'] = 'GfmLink'
                   cfg['book_title'] = ""
                   cfg['icon'] = ""
-                  cfg['base_font'] = 'Coolvetica'
+                  cfg['base_font'] = nil
                   cfg['have_nav'] = false
                   cfg['syntax_highlight'] = true # true until render_code is working
                   cfg['toc'] = {}
