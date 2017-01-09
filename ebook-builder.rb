@@ -1,5 +1,7 @@
 
 require 'yaml'
+require 'kramdown'
+require 'gfmlink'
 Shoes.app :width => 800 do
   yaml_fl = ARGV[1]
   #puts "yaml file #{yaml_fl}"
@@ -180,11 +182,11 @@ Shoes.app :width => 800 do
                   @menu_list = []
                   Dir.chdir(cfg['doc_home']) do |p|
                     f = "#{p}/#{cfg['toc']['root']}"
-                    #puts "process toc #{f}"
+                    puts "process toc #{f}"
                     pre_toc = Kramdown::Document.new(File.read(f, encoding: "UTF-8"),
                           { menu_list: @menu_list, input: cfg['input_format']
                           }).to_menuparse
-                    #puts "first level #{@menu_list}"
+                    puts "first level #{@menu_list}"
                     # Getting tricksy and clumsy. Stumble or Dance?
                     cfg['toc']['section_order'] = []
                     cfg['toc']['files'] = []

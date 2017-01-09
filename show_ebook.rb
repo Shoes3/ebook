@@ -2,14 +2,15 @@
  # into the users exe in place of Shoes.rb (or callable) by that
  # script or the by the ebook-builder.  Beware the path names.
 module Shoes::Ebook
+  require 'gfmlink'
   require 'kd-render'
   require 'search_picky'
   def render_file (cfg, sect_nm, dir, file)
+    puts "parse: #{dir} #{file}"
     render_doc = Kramdown::Document.new(File.read(File.join(dir, file)), 
         { :syntax_highlighter => "rouge",
           :syntax_highlighter_opts => { css_class: false, line_numbers: false, inline_theme: "github" },
           cfg: cfg, chapter: sect_nm, input: cfg['input_format'], hard_wrap: false,
-          #cfg: cfg, chapter: sect_nm, input: 'GfmLink', hard_wrap: false,
           gfm_quirk: []
         }
       ).to_shoes
@@ -49,6 +50,7 @@ module Shoes::Ebook
       # parse Toc files and hook the generated code into the cfg
       # BEWARE of assumptions
       # TODO: a toc doc could have images - we might not handle that
+      # in kd-toc
       cfg['toc']['section_order'].each_index do |si|
         nav_fl = cfg['toc']['files'][si]
         sect_name = cfg['toc']['section_order'][si]

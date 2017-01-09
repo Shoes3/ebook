@@ -1,5 +1,5 @@
 # -*- encoding: utf-8 -*-
-# Preprocess for img and links
+# Preprocess for img (and some forms of links)
 
 require("kramdown")
 
@@ -58,13 +58,6 @@ module Kramdown
       #end of *this* TODO
          
       def convert_text(el)
-        #%{para("#{el.value}", :margin_left => 0, :margin_right => 0)}
-        dblbracket = el.value[/\[\[(.*)\]\]/]
-        if dblbracket
-          menu = dblbracket[2..-3].gsub(' ', '-')
-          @menu_list << "#{menu}.md"
-          #puts "LINK: #{menu}" 
-        end
       end
          
       def convert_header(el)
@@ -95,8 +88,6 @@ module Kramdown
         end
         #results
       end
-      ##alias :convert_ol :convert_ul
-      ##alias :convert_dl :convert_ul
                   
       def convert_smart_quote(el)
         #%{para("'", :margin_left => 0, :margin_right => 0)}
@@ -111,21 +102,13 @@ module Kramdown
         return nil
       end
       
-      # TODO: syntax highlight not working (no errors - just doesn't return anything)
       def convert_codespan(el)
-        #puts el.type
-        ##puts highlight_code(el.value, el.attr['class'], :span)
-        ##h = ::Kramdown::Converter.syntax_highlighter(@options[:syntax_highlighter])
-        ##puts h.call(self, el.value, el.attr['class'], :span)
-        #puts syntax_highlighter(self, el.value, el.attr['class'], :span)
       end
          
       def convert_codeblock(el)
-        #puts el.type
       end
          
       def convert_strong(el)
-        #%[para "STRONG"]
       end
       
       def convert_img(el)
@@ -149,6 +132,11 @@ module Kramdown
          
       def convert_em(el)
         #%[para '-']
+      end
+      
+      def convert_gfmlink(el)
+        str =  el.attr['gfmlink']
+        @menu_list << "#{str.gsub(' ', '-')}.md"
       end
       
       def syntax_highlighter(converter, text, lang, type)

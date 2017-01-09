@@ -4,6 +4,7 @@
 require("kramdown")
 
 module Kramdown
+  
   module Converter
     class Menuparse < Base
         attr_accessor :image_hash
@@ -58,13 +59,6 @@ module Kramdown
       #end of *this* TODO
          
       def convert_text(el)
-        #%{para("#{el.value}", :margin_left => 0, :margin_right => 0)}
-        dblbracket = el.value[/\[\[(.*)\]\]/]
-        if dblbracket
-          menu = dblbracket[2..-3].gsub(' ', '-')
-          @menu_list << "#{menu}.md"
-          #puts "LINK: #{menu}" 
-        end
       end
          
       def convert_header(el)
@@ -144,6 +138,17 @@ module Kramdown
          
       def convert_em(el)
         #%[para '-']
+      end
+      
+      def convert_gfmlink(el)
+        str =  el.attr['gfmlink']
+        @menu_list << "#{str.gsub(' ', '-')}.md"
+        #dblbracket = el.value[/\[\[(.*)\]\]/]
+        #if dblbracket
+        #  menu = dblbracket[2..-3].gsub(' ', '-')
+        #  @menu_list << "#{menu}.md"
+        #  #puts "LINK: #{menu}" 
+        #end
       end
       
       def syntax_highlighter(converter, text, lang, type)
