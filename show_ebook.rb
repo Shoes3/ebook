@@ -7,7 +7,7 @@ module Shoes::Ebook
   require 'search_picky'
   def render_file (cfg, sect_nm, dir, file)
     puts "parse: #{dir} #{file}"
-    render_doc = Kramdown::Document.new(File.read(File.join(dir, file)), 
+    render_doc = Kramdown::Document.new(File.read(File.join(dir, file), encoding: "UTF-8"), 
         { :syntax_highlighter => "rouge",
           :syntax_highlighter_opts => { css_class: false, line_numbers: false, inline_theme: "github" },
           cfg: cfg, chapter: sect_nm, input: cfg['input_format'], hard_wrap: false,
@@ -68,7 +68,7 @@ module Shoes::Ebook
         #puts "going into #{sect_name}"
         sect = cfg['sections'][sect_name]
         sect[:display_order].each do |fl|
-          #puts "render #{cfg['doc_home']}/#{cfg[sect]}/#{sect_name}/#{fl}"
+          puts "render #{cfg['doc_home']}/#{cfg[sect]}/#{sect_name}/#{fl}"
           contents = render_file(cfg, sect_name, "#{cfg['doc_home']}/#{sect_name}", fl)
           landing = {title: fl, code: contents}
           cfg['code_struct'] << landing

@@ -123,7 +123,7 @@ module Kramdown
         hsh = @image_hash
         fname = "#{el.attr['alt']}#{ext}"
         fname.gsub!(' ', '-');
-        #puts "alt tag: #{fname}"
+        puts "alt tag: #{fname}"
         if !fname || fname[0] == '.' # start of extension 
           # someone didn't put an alt tag like they were supposed to do. 
           fname = File.basename(url)

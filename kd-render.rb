@@ -194,7 +194,8 @@ module Kramdown
         url = el.attr['src']
         ext = File.extname(url);
         #%[para "IMAGE_HERE: #{@cfg['doc_home']}/#{el.attr['alt']}#{ext}"]
-        lcl = @cfg['sections'][@chapter]['images'][url]
+        #lcl = @cfg['sections'][@chapter]['images'][url]
+        lcl = @cfg['images'][url]
         if lcl
           #puts "found local image #{lcl}"
           %[image "#{@cfg['doc_home']}/.ebook/images/#{lcl}"]
