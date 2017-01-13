@@ -57,64 +57,7 @@ Shoes.app :width => 800 do
                 if @ebook_dir.text == nil || @ebook_title == nil || @ebook_menu == nil
                   alert "You are missing something!"
                 else
-                  dir = cfg['doc_home'] = @ebook_dir.text
-                  cfg['nested'] = false
-                  cfg['input_format'] = 'GfmLink'
-                  cfg['book_title'] = ""
-                  cfg['icon'] = ""
-                  cfg['base_font'] = nil
-                  cfg['have_nav'] = false
-                  cfg['syntax_highlight'] = true # true until render_code is working
-                  cfg['toc'] = {}
-                  cfg['sections'] = {}
-                  cfg['images'] = {}
-                  Dir.mkdir("#{dir}/.ebook") unless Dir.exist?("#{dir}/.ebook")
-                  Dir.mkdir("#{dir}/.ebook/images") unless Dir.exist? "#{dir}/.ebook/images"
-                  Dir.chdir(cfg['doc_home']) do |d|
-                    dirname = File.basename(d)
-                    #cfg['sections'][dirname] = {dir: dirname, title: dirname, files: []}
-                    Dir.glob("**/*.md") do |f|
-                      flds = f.split('/')
-                      if flds.size <= 1 
-                        # special case for one level  documents.
-                        if cfg['sections'][dirname] == nil
-                          cfg['sections'][dirname] = {dir: dirname, title: dirname, files: []}
-                        end
-                        fa = cfg['sections'][dirname][:files] 
-                        fa << f unless f == '_Sidebar.md'
-                        #puts "Special case: #{fa} in #{dirname}"
-                      elsif flds.size > 1 && cfg['sections'][flds[0]] == nil
-                        # create a new section
-                        cfg['sections'][flds[0]] = flds[0]  
-                        #puts "creating new section #{flds[0]}"
-                        dirname = flds[0]
-                        cfg['sections'][dirname] = {dir: dirname, title: dirname, files: []}
-                        cfg['sections'][dirname][:files] << flds[-1] unless flds[-1] == '_Sidebar.md'
-                      else
-                        cfg['sections'][dirname][:files] << flds[-1] unless flds[-1] == '_Sidebar.md'
-                      end
-                    end
-                  end
-                  menu_name = @ebook_menu.text
-                  cfg['toc']['root'] = File.basename(menu_name)
-                  cfg['have_nav'] =  (menu_name) && (menu_name != '')
-                  cfg['toc']['files'] = [] # TODO: may not need
-                  cfg['nested'] = true if cfg['sections'].size > 1
-                  cfg['book_title'] = @ebook_title.text
-                  icon_fl = @ebook_icon.text
-                  cfg['icon'] = (icon_fl && icon_fl != '') ? icon_fl : "#{DIR}/static/app-icon.png"
-                  # clean up on aisle 10 - remove toc document 
-                  tocfn = cfg['toc']['root']
-                  #puts "cleaning find #{tocfn}"
-                  cfg['sections'].each do |sect, sect_hsh|
-                    fa = sect_hsh[:files]
-                    #puts "clean #{tocfn} from #{fa}"
-                    fa.delete_if {|x| x == tocfn }
-                  end
-                  File.open("#{dir}/.ebook/ebook.yaml", 'w') do |f|
-                    YAML.dump(cfg, f)
-                  end
-                  cp "#{dir}/.ebook/ebook.yaml", "#{dir}/.ebook/ebook-1.yaml"
+                  ebook_init(cfg, @ebook_dir.text, @ebook_title.text, @ebook_menu.text, @ebook_icon.text)
                 end
               end
             end
@@ -136,107 +79,11 @@ Shoes.app :width => 800 do
               @header_hash = {}
               @link_hash = {} 
               @menu_list = []
-              Dir.chdir(cfg["doc_home"]) do
-                cfg['sections'].keys.each do |section|
-                  #puts "using #{section}"
-                  #puts "  #{cfg['sections'][section]}"
-                  #puts "  #{cfg['sections'][section][:files]}"
-                  @image_hash = {}
-                  @header_hash = {}
-                  cfg['sections'][section][:files].each do |fname|
-                    relpath = "#{cfg['sections'][section][:dir]}/#{fname}"
-                    #puts "In dir #{relpath}"
-                    d = File.dirname(relpath)
-                    f = File.basename(relpath)
-                    if cfg['nested'] 
-                      Dir.chdir(d) do 
-                        # pre_doc is an array 
-                        pre_doc = Kramdown::Document.new(File.read(f, encoding: "UTF-8"),
-                          {img_hash: @image_hash, hdr_hash: @header_hash, lnk_hash: @link_hash,
-                            menu_list: @menu_list, input: cfg['input_format']
-                          }).to_preprocess
-                      end
-                    else 
-                      pre_doc = Kramdown::Document.new(File.read(f, encoding: "UTF-8"),
-                          {img_hash: @image_hash, hdr_hash: @header_hash, lnk_hash: @link_hash,
-                             menu_list: @menu_list, input: cfg['input_format']
-                          }).to_preprocess
-                    end
-                    download_images(cfg, @image_hash)
-                    # note all images are in one dir (it's the github way)
-                    #Dir.chdir(".ebook/images") do
-                    #  here = Dir.getwd
-                    #  @image_hash.each do |k, v| 
-                    #    next if File.exists?("#{here}/#{v}")
-                    #    if confirm "Download to #{here}/#{v}"
-                    #      download k, save: "#{here}/#{v}"
-                    #      @err_box.append("downloaded #{here}/#{v} <- #{k}\n")
-                    #      cfg['images'][k] = v 
-                    #    end
-                    #  end
-                    #end
-                  end
-                  
-                  #cfg['sections'][section]['images'] = @image_hash
-                  foo = cfg['sections'][section]['headers'] = @header_hash
-                end
-                
-                # Process the toc/menu documents if available and github nested
-                if cfg['toc']['root'] && cfg['have_nav']
-                  @menu_list = []
-                  @img_hash = {}   # it is possible that a nav doc has images
-                  Dir.chdir(cfg['doc_home']) do |p|
-                    f = "#{p}/#{cfg['toc']['root']}"
-                    puts "process toc #{f}"
-                    pre_toc = Kramdown::Document.new(File.read(f, encoding: "UTF-8"),
-                          { img_hash: @img_hash, menu_list: @menu_list, input: cfg['input_format']
-                          }).to_menuparse
-                    #puts "first level #{@menu_list}"
-                    cfg['toc']['section_order'] = []
-                    cfg['toc']['files'] = []
-                    @menu_list.each do |md| 
-                      cfg['sections'].each do |sect_k, sect_v| 
-                        sect_files = cfg['sections'][sect_k][:files]
-                        pos = sect_files.find_index(md)
-                        if pos 
-                          puts "Found #{md} in #{sect_k}"
-                          cfg['toc']['section_order'] << sect_k
-                          cfg['toc']['files'] << md
-                          sect_files.delete_at(pos)
-                        end
-                      end
-                    end
-                    cfg['toc']['section_order'].each_index do |i|
-                      d = cfg['toc']['section_order'][i]
-                      sect = cfg['sections'][d]
-                      f = cfg['toc']['files'][i]
-                      @menu_list = []
-                      @img_hash = {}  
-                      @err_box.append "toc process #{d}/#{f}\n"
-                      pre_toc = Kramdown::Document.new(File.read("#{d}/#{f}", encoding: "UTF-8"),
-                          { img_hash: @image_hash, menu_list: @menu_list, input: cfg['input_format']
-                          }).to_menuparse
-                      cfg['sections'][d][:display_order] = []
-                      @menu_list.each do |md|
-                        cfg['sections'][d][:display_order] << md
-                        pos = cfg['sections'][d][:files].find_index(md)
-                        if pos
-                          cfg['sections'][d][:files].delete_at(pos)
-                        else
-                          @err_box.append("failed delete of #{md}\n")
-                        end
-                      end
-                    end
-                    # download images and set cfg[images]
-                    download_images(cfg, @img_hash)
-                    @err_box.append("Done - You can save if you want\n")
-                  end
-                else
-                  @err_box.append("Done - You can save if you want\n")
-                  puts "no toc to deal with"
-                end
-              end
+              preprocess_section(cfg, @image_hash, @header_hash, @link_hash, @menu_list) 
+              preproccess_toc(cfg, @err_box)
+              @err_box.append("Done - You can save if you want\n")
             end
+            
             button "Save" do
               cfg['links'] = @link_hash
               # rewrite the ebook.yaml 
@@ -366,8 +213,69 @@ Shoes.app :width => 800 do
     @panel = stack do
     end
   end
+ 
+  #
+  def ebook_init(cfg, dir_name, title, menu_top_fl, icon_fl)
+    dir = cfg['doc_home'] = dir_name
+    cfg['nested'] = false
+    cfg['input_format'] = 'GfmLink'
+    cfg['book_title'] = ""
+    cfg['icon'] = ""
+    cfg['base_font'] = nil
+    cfg['have_nav'] = false
+    cfg['syntax_highlight'] = true # true until render_code is working
+    cfg['toc'] = {}
+    cfg['sections'] = {}
+    cfg['images'] = {}
+    Dir.mkdir("#{dir}/.ebook") unless Dir.exist?("#{dir}/.ebook")
+    Dir.mkdir("#{dir}/.ebook/images") unless Dir.exist? "#{dir}/.ebook/images"
+    Dir.chdir(cfg['doc_home']) do |d|
+      dirname = File.basename(d)
+      Dir.glob("**/*.md") do |f|
+        flds = f.split('/')
+        if flds.size <= 1 
+          # special case for one level  documents.
+          if cfg['sections'][dirname] == nil
+            cfg['sections'][dirname] = {dir: dirname, title: dirname, files: []}
+          end
+          fa = cfg['sections'][dirname][:files] 
+          fa << f unless f == '_Sidebar.md'
+          #puts "Special case: #{fa} in #{dirname}"
+        elsif flds.size > 1 && cfg['sections'][flds[0]] == nil
+          # create a new section
+          cfg['sections'][flds[0]] = flds[0]  
+          #puts "creating new section #{flds[0]}"
+          dirname = flds[0]
+          cfg['sections'][dirname] = {dir: dirname, title: dirname, files: []}
+          cfg['sections'][dirname][:files] << flds[-1] unless flds[-1] == '_Sidebar.md'
+        else
+          cfg['sections'][dirname][:files] << flds[-1] unless flds[-1] == '_Sidebar.md'
+        end
+      end
+    end
+    menu_name = menu_top_fl
+    cfg['toc']['root'] = File.basename(menu_name)
+    cfg['have_nav'] =  (menu_name) && (menu_name != '')
+    cfg['toc']['files'] = [] # TODO: may not need
+    cfg['nested'] = true if cfg['sections'].size > 1
+    cfg['book_title'] = title
+    icon_fl = icon_fl
+    cfg['icon'] = (icon_fl && icon_fl != '') ? icon_fl : "#{DIR}/static/app-icon.png"
+    # clean up on aisle 10 - remove toc document 
+    tocfn = cfg['toc']['root']
+    #puts "cleaning find #{tocfn}"
+    cfg['sections'].each do |sect, sect_hsh|
+      fa = sect_hsh[:files]
+      #puts "clean #{tocfn} from #{fa}"
+      fa.delete_if {|x| x == tocfn }
+    end
+    File.open("#{dir}/.ebook/ebook.yaml", 'w') do |f|
+      YAML.dump(cfg, f)
+    end
+    cp "#{dir}/.ebook/ebook.yaml", "#{dir}/.ebook/ebook-1.yaml"
+  end
   
-  # utility methods
+  # utility methods - there are GUI @widgets assumptions.
   
   def download_images(cfg, img_hsh)
     # note all images are in one dir (it's the github way)
@@ -385,4 +293,110 @@ Shoes.app :width => 800 do
       end
     end
   end
+  
+  # hide all the kdramdown craziness at the end of the script
+
+  def preprocess_section (cfg, image_hash, header_hash, link_hash, menu_list) 
+    Dir.chdir(cfg["doc_home"]) {
+      cfg['sections'].keys.each { |section|
+        #puts "using #{section}"
+        #puts "  #{cfg['sections'][section]}"
+        #puts "  #{cfg['sections'][section][:files]}"
+        @image_hash = {}
+        @header_hash = {}
+        cfg['sections'][section][:files].each { |fname|
+          relpath = "#{cfg['sections'][section][:dir]}/#{fname}"
+          #puts "In dir #{relpath}"
+          d = File.dirname(relpath)
+          f = File.basename(relpath)
+          if cfg['nested'] 
+            Dir.chdir(d) {
+              # pre_doc is an array 
+              pre_doc = Kramdown::Document.new(File.read(f, encoding: "UTF-8"),
+                {img_hash: @image_hash, hdr_hash: @header_hash, lnk_hash: @link_hash,
+                  menu_list: @menu_list, input: cfg['input_format']
+                }).to_preprocess
+            }
+          else 
+            pre_doc = Kramdown::Document.new(File.read(f, encoding: "UTF-8"),
+                {img_hash: @image_hash, hdr_hash: @header_hash, lnk_hash: @link_hash,
+                   menu_list: @menu_list, input: cfg['input_format']
+                }).to_preprocess
+          end
+          download_images(cfg, @image_hash)
+        }
+        #cfg['sections'][section]['images'] = @image_hash
+        foo = cfg['sections'][section]['headers'] = @header_hash
+      }
+    }
+  end
+
+  # Process the toc/menu documents, if available, github nested (or not)
+  def preproccess_toc(cfg, err_box)
+    if ! cfg['have_nav'] 
+      return
+    end
+    @menu_list = []
+    @img_hash = {}   # it is possible that a nav doc has images
+    if cfg['nested'] 
+      Dir.chdir(cfg['doc_home']) { |p|
+        f = "#{p}/#{cfg['toc']['root']}"
+        puts "process toc #{f}"
+        pre_toc = Kramdown::Document.new(File.read(f, encoding: "UTF-8"),
+          { img_hash: @img_hash, menu_list: @menu_list, input: cfg['input_format']
+          }).to_menuparse
+      }
+    else 
+      f = "#{cfg['doc_home']}/#{cfg['toc']['root']}"
+      pre_toc = Kramdown::Document.new(File.read(f, encoding: "UTF-8"),
+          { img_hash: @img_hash, menu_list: @menu_list, input: cfg['input_format']
+          }).to_menuparse
+    end
+    
+    # move nav files from section to toc
+    #puts "first level #{@menu_list}"
+    cfg['toc']['section_order'] = []
+    cfg['toc']['files'] = []
+    @menu_list.each { |md| 
+      cfg['sections'].each { |sect_k, sect_v| 
+        sect_files = cfg['sections'][sect_k][:files]
+        pos = sect_files.find_index(md)
+        if pos 
+          puts "Found #{md} in #{sect_k}"
+          cfg['toc']['section_order'] << sect_k
+          cfg['toc']['files'] << md
+          sect_files.delete_at(pos)
+        end
+      }
+    }
+    # now parse the md files inside section order and and remove them
+    # from section display_order.
+    if cfg['have_nav'] && cfg['nested'] 
+      cfg['toc']['section_order'].each_index { |i|
+        d = cfg['toc']['section_order'][i]
+        sect = cfg['sections'][d]
+        f = cfg['toc']['files'][i]
+        @menu_list = []
+        @img_hash = {}  
+        fn
+        @err_box.append "toc process #{d}/#{f}\n"
+        pre_toc = Kramdown::Document.new(File.read("#{d}/#{f}", encoding: "UTF-8"),
+            { img_hash: @image_hash, menu_list: @menu_list, input: cfg['input_format']
+            }).to_menuparse
+        cfg['sections'][d][:display_order] = []
+        @menu_list.each { |md|
+          cfg['sections'][d][:display_order] << md
+          pos = cfg['sections'][d][:files].find_index(md)
+          if pos
+            cfg['sections'][d][:files].delete_at(pos)
+          end
+        }
+      }
+    end
+    # download images and set cfg[images]
+    download_images(cfg, @img_hash)
+  end  
+
 end
+
+
