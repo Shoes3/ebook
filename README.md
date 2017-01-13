@@ -62,7 +62,29 @@ Then it calls the  installer builder for your platform and you put the exe/app/d
 
 ## ebook-builder.rb
 
+Step 1 is to git clone your github wiki (if that's your source) or otherwise get copy of the
+md's you want onto your system running Shoes. 
+
 ![ebook-builder](https://cloud.githubusercontent.com/assets/222691/21376329/4e90d74e-c6f1-11e6-894d-0ff8a75a9839.png)
 
 Is a wizard like program you can run from Shoes and it will walk you through building a
 correct yaml and testing it.
+
+## Ebook types
+
+There are 2 general types of directory layout of the md files, Simple and have_nav. Simple is
+just one or a couple of mds. README.md is likely to be the only md file at github, for example. Shoes does
+not currently display these with lots of sidebar menus because it's hard to correctly. This README.md is just that.
+
+Github also allows another directory layout option which has a separate 'navigation' or menu documents. 
+[See the Shoes wiki](https://github.com/Shoes3/shoes3/wiki) for an examples. In Shoes ebook this would be a 
+`have_nav == true` and that example is also `nested == true` because it has multiple directories. This plays 
+nicely with Shoes ebook. If given a chance Shoes ebook will parse the 'Home.md' and what it points to
+to build a better table of contents to display. 
+
+You're probably thinking what does `nested == false` mean? That means you have one menu document in your one directory and you probably 
+have muliple mds in there. This two, can play nicer with Shoes ebook. All you have to do is write that menu.
+This may require you change things at github - split the README.md into two or more files. README.md would be 
+your navigation document and it would have some new elements using the [[ file name ]] 
+
+You should expect to have to tweak other things
