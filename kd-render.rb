@@ -190,18 +190,14 @@ module Kramdown
       end
       
       def convert_img(el)
-        #puts el.attr['src']
         url = el.attr['src']
         ext = File.extname(url);
-        #%[para "IMAGE_HERE: #{@cfg['doc_home']}/#{el.attr['alt']}#{ext}"]
-        #lcl = @cfg['sections'][@chapter]['images'][url]
         lcl = @cfg['images'][url]
         if lcl
-          #puts "found local image #{lcl}"
           %[image "#{@cfg['doc_home']}/.ebook/images/#{lcl}"]
         else
-          puts "Bad Boy! Don't suck images from #{url}"
-          %[image "{#url}"]
+          puts "Not an image: #{url}"
+          nil
         end
       end
       
@@ -213,11 +209,27 @@ module Kramdown
       end
   
       def convert_typographic_sym(el)
-        %[para"??"]
+        sub = case el.value
+          when :hellip
+            "\u2026"
+          when :ndash # non breaking dash
+            "\u2013"
+          else
+            # The Dotted Cross! - gotta pick something for unknown
+            "\u2025"
+        end
+        #puts "typegrapic sub: #{sub}"
+        %[para"#{sub}"]
       end
          
+      # I think this means Shoes italic, not strong
       def convert_em(el)
-        %[para '-']
+        results = []
+        el.children.each do |inner_el|
+          results << inner_el.value
+        end
+        t = results.size > 1 ? results.join : results[0]
+        %[para "#{t}", :emphasis => "italic"]        
       end
       
       # TODO: fix these in kd-render

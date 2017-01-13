@@ -6,7 +6,7 @@ module Shoes::Ebook
   require 'kd-render'
   require 'search_picky'
   def render_file (cfg, sect_nm, dir, file)
-    puts "parse: #{dir} #{file}"
+    #puts "parse: #{dir} #{file}"
     render_doc = Kramdown::Document.new(File.read(File.join(dir, file), encoding: "UTF-8"), 
         { :syntax_highlighter => "rouge",
           :syntax_highlighter_opts => { css_class: false, line_numbers: false, inline_theme: "github" },
