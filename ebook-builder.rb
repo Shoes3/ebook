@@ -336,6 +336,7 @@ Shoes.app :width => 800 do
     if ! cfg['have_nav'] 
       return
     end
+    # parse the toc root doc.
     @menu_list = []
     @img_hash = {}   # it is possible that a nav doc has images
     if cfg['nested'] 
@@ -353,34 +354,33 @@ Shoes.app :width => 800 do
           }).to_menuparse
     end
     
-    # move nav files from section to toc
-    #puts "first level #{@menu_list}"
-    cfg['toc']['section_order'] = []
-    cfg['toc']['files'] = []
-    @menu_list.each { |md| 
-      cfg['sections'].each { |sect_k, sect_v| 
-        sect_files = cfg['sections'][sect_k][:files]
-        pos = sect_files.find_index(md)
-        if pos 
-          puts "Found #{md} in #{sect_k}"
-          cfg['toc']['section_order'] << sect_k
-          cfg['toc']['files'] << md
-          sect_files.delete_at(pos)
-        end
+    if cfg['nested']
+      # move nav files from section to toc
+      #puts "first level #{@menu_list}"
+      cfg['toc']['section_order'] = []
+      cfg['toc']['files'] = []
+      @menu_list.each { |md| 
+        cfg['sections'].each { |sect_k, sect_v| 
+          sect_files = cfg['sections'][sect_k][:files]
+          pos = sect_files.find_index(md)
+          if pos 
+            puts "Found #{md} in #{sect_k}"
+            cfg['toc']['section_order'] << sect_k
+            cfg['toc']['files'] << md
+            sect_files.delete_at(pos)
+          end
+        }
       }
-    }
-    # now parse the md files inside section order and and remove them
-    # from section display_order.
-    if cfg['have_nav'] && cfg['nested'] 
+      # now parse the md files inside section order and and remove them
+      # from section display_order.
       cfg['toc']['section_order'].each_index { |i|
         d = cfg['toc']['section_order'][i]
         sect = cfg['sections'][d]
         f = cfg['toc']['files'][i]
         @menu_list = []
         @img_hash = {}  
-        fn
         @err_box.append "toc process #{d}/#{f}\n"
-        pre_toc = Kramdown::Document.new(File.read("#{d}/#{f}", encoding: "UTF-8"),
+        pre_toc = Kramdown::Document.new(File.read("#{cfg['doc_home']}/#{d}/#{f}", encoding: "UTF-8"),
             { img_hash: @image_hash, menu_list: @menu_list, input: cfg['input_format']
             }).to_menuparse
         cfg['sections'][d][:display_order] = []
@@ -392,6 +392,9 @@ Shoes.app :width => 800 do
           end
         }
       }
+    else
+      # single directory with one nav doc
+      puts "doing nothing more for only one nav doc"
     end
     # download images and set cfg[images]
     download_images(cfg, @img_hash)
