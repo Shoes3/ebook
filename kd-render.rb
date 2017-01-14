@@ -122,14 +122,28 @@ module Kramdown
         results = []
         el.children.each do |inner_el|
           results << %[flow(:margin_left => 30) { fill black; oval -10, 10, 6; #{send(DISPATCHER[inner_el.type], inner_el)} }]
-        end
+          #results << %[flow(:margin_left => 30) { para "\u2022"; #{send(DISPATCHER[inner_el.type], inner_el)} }]
+       end
         results
       end
       ##alias :convert_ol :convert_ul
       ##alias :convert_dl :convert_ul
-                  
+                
+                
+      # TODO?
       def convert_smart_quote(el)
-        %{para("'", :margin_left => 0, :margin_right => 0)}
+        t = case el.value
+          when :lsquo
+            "\u2018"
+          when :rsquo
+            "\u2019"
+          when :ldquo
+            "\u201C"
+          when :rdquo
+            "\u201D"
+        end
+        #puts "smartquote sub #{t}"
+        %{para("#{t}", :margin_left => 0, :margin_right => 0)}
       end
          
       def convert_a(el)
@@ -142,7 +156,7 @@ module Kramdown
         %[para(link("#{results.join}") { open_url("#{el.attr['href']}") }, :margin_left => 0, :margin_right => 0)]
       end
       
-      # there are `back ticks` in md
+      # from are `back ticks` in markdown
       def convert_codespan(el)
         # need to escape some things in the string like "
         str = el.value
@@ -232,7 +246,7 @@ module Kramdown
         %[para "#{t}", :emphasis => "italic"]        
       end
       
-      # TODO: fix these in kd-render
+      # TODO: fix these in kd-render?
       def convert_br(el)
       end
       

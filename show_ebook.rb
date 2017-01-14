@@ -26,7 +26,8 @@ module Shoes::Ebook
     cfg['link_hash'] = {}
     cfg['code_struct'] = []  # array of hashes
     if cfg['have_nav'] == false 
-      # a very simple ebook
+      # a very simple ebook - could be made more useful with a different
+      # kramdown converter
       cfg['toc']['section_order'].each_index do |si|
         sect_name = cfg['toc']['section_order'][si]
         #puts "going into #{sect_name}"
@@ -48,9 +49,6 @@ module Shoes::Ebook
       cfg['code_struct'] <<  landing
       cfg['link_hash'][toc_root_fl] = landing
       # parse Toc files and hook the generated code into the cfg
-      # BEWARE of assumptions
-      # TODO: a toc doc could have images - we might not handle that
-      # in kd-toc
       cfg['toc']['section_order'].each_index do |si|
         nav_fl = cfg['toc']['files'][si]
         sect_name = cfg['toc']['section_order'][si]
@@ -68,7 +66,7 @@ module Shoes::Ebook
         #puts "going into #{sect_name}"
         sect = cfg['sections'][sect_name]
         sect[:display_order].each do |fl|
-          puts "render #{cfg['doc_home']}/#{cfg[sect]}/#{sect_name}/#{fl}"
+          #puts "render #{cfg['doc_home']}/#{cfg[sect]}/#{sect_name}/#{fl}"
           contents = render_file(cfg, sect_name, "#{cfg['doc_home']}/#{sect_name}", fl)
           landing = {title: fl, code: contents}
           cfg['code_struct'] << landing
