@@ -3,10 +3,10 @@
  # script or the by the ebook-builder.  Beware the path names.
 module Shoes::Ebook
   require 'gfmlink'
-  require 'kd-render'
   require 'search_picky'
   def render_file (cfg, sect_nm, dir, file)
     #puts "parse: #{dir} #{file}"
+    require 'kd-render'
     render_doc = Kramdown::Document.new(File.read(File.join(dir, file), encoding: "UTF-8"), 
         { :syntax_highlighter => "rouge",
           :syntax_highlighter_opts => { css_class: false, line_numbers: false, inline_theme: "github" },
@@ -14,6 +14,18 @@ module Shoes::Ebook
           gfm_quirk: []
         }
       ).to_shoes
+    #rendering(render_doc)
+  end
+
+  def render_deep (cfg, dir, file)
+    require 'kd-deepr'
+    render_doc = Kramdown::Document.new(File.read(File.join(dir, file), encoding: "UTF-8"), 
+        { :syntax_highlighter => "rouge",
+          :syntax_highlighter_opts => { css_class: false, line_numbers: false, inline_theme: "github" },
+          cfg: cfg, input: cfg['input_format'], hard_wrap: false,
+          gfm_quirk: []
+        }
+      ).to_deeplook
     #rendering(render_doc)
   end
 
@@ -26,19 +38,33 @@ module Shoes::Ebook
     cfg['link_hash'] = {}
     cfg['code_struct'] = []  # array of hashes
     if cfg['have_nav'] == false 
-      # a very simple ebook - could be made more useful with a different
-      # kramdown converter
-      cfg['toc']['section_order'].each_index do |si|
-        sect_name = cfg['toc']['section_order'][si]
-        #puts "going into #{sect_name}"
-        sect = cfg['sections'][sect_name] # this is a hash
-        sect['intro'] = sect[:display_order][0]
-        sect[:display_order].each do |fl|
-          #puts "render #{cfg['doc_home']}/#{fl} #{sect['intro']}"
-          contents = render_file(cfg, sect_name, cfg['doc_home'], fl)
-          landing = {title: fl, code: contents}
-          cfg['code_struct'] << landing
-          cfg['link_hash'][fl] = landing
+      # a very simple ebook (one section) - does it have muliple md files? 
+      sect_nm = cfg['toc']['section_order'][0]
+      puts "sect_nm = #{sect_nm}"
+      if cfg['toc']['root'] && cfg['sections'].size == 1 &&
+        cfg['sections'][sect_nm][:files].size == 1
+        # attempt to build navigitable intro, sections & subsections
+        # (and Shoes code for them)
+        tsect = cfg['toc']['section_order'][0]
+        cfg['sections'][tsect]['headers'] = {}
+        fl = cfg['sections'][tsect][:display_order][0]
+        puts "going deep on #{fl}"
+        render_deep(cfg, cfg['doc_home'], fl)
+        puts cfg.inspect
+      else
+        # no nav, but multiple files.
+        cfg['toc']['section_order'].each_index do |si|
+          sect_name = cfg['toc']['section_order'][si]
+          #puts "going into #{sect_name}"
+          sect = cfg['sections'][sect_name] # this is a hash
+          sect['intro'] = sect[:display_order][0]
+          sect[:display_order].each do |fl|
+            #puts "render #{cfg['doc_home']}/#{fl} #{sect['intro']}"
+            contents = render_file(cfg, sect_name, cfg['doc_home'], fl)
+            landing = {title: fl, code: contents}
+            cfg['code_struct'] << landing
+            cfg['link_hash'][fl] = landing
+          end
         end
       end
     elsif cfg['nested']  # have_nav == true and nested == true ==> Full Monty

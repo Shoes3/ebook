@@ -143,12 +143,6 @@ module Kramdown
       def convert_gfmlink(el)
         str =  el.attr['gfmlink']
         @menu_list << "#{str.gsub(' ', '-')}.md"
-        #dblbracket = el.value[/\[\[(.*)\]\]/]
-        #if dblbracket
-        #  menu = dblbracket[2..-3].gsub(' ', '-')
-        #  @menu_list << "#{menu}.md"
-        #  #puts "LINK: #{menu}" 
-        #end
       end
       
       def syntax_highlighter(converter, text, lang, type)
@@ -161,7 +155,6 @@ module Kramdown
         formatter = ::Rouge::Formatters::ShoesFormatter.new(opts)
         formatter.format(lexer.lex(text))
       end
-      # TODO: end
     end
   end
 end
