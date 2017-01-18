@@ -6,7 +6,8 @@
 
 require("rouge")
 require("kramdown")
-require("pp")
+require 'fileutils'
+include FileUtils
 
 def open_url(url)
   if RbConfig::CONFIG['host_os'] =~ /mswin|mingw|cygwin/
@@ -41,7 +42,7 @@ end
 
 module Kramdown
   module Converter
-    class DeepLook < Base
+    class Deeplook < Base
       ##include ShoesRouge
       def initialize(root, options)
         @cfg = options[:cfg]
@@ -52,6 +53,10 @@ module Kramdown
         @subsection  = ''
         @results = []
         @level = 0
+        @muddled = '' # this is computed My-SubSection.md used for hash keys
+                      # by shoes_render. 
+        @rstack = []
+        puts "init deeplook"
         super
       end
          
@@ -77,7 +82,46 @@ module Kramdown
         return nil
       end
       
-      def close_level
+      # @level is the current level to close to put @results into
+      # the cfg in the proper place to show_ebook can display them
+      def close_level (new_name)
+        # debugging - create a dump file for level's content
+        if @level > 0
+          dfl = "dump/#{@level}-#{@muddled}.rbd"
+          mkdir_p('dump');
+          File.open(dfl,'w') do |fl|
+           fl.write @results
+          end
+        end
+        # TODO: beware hash key collisions
+        case @level
+          when 1
+            @cfg['have_nav'] = true
+            @cfg['nested'] = true
+            opening = @cfg['book_title']
+            @cfg['toc']['root'] = opening
+            landing = {title: opening, code: @results}
+            @cfg['code_struct'] << landing
+            @cfg['link_hash'][opening] = landing
+
+          when 2
+            sect_nm = @muddled
+            @cfg['toc']['section_order'] << @section
+            landing = {title: sect_nm, code: @results}
+            @cfg['code_struct'] << landing
+            @cfg['link_hash'][sect_nm] = landing 
+            @cfg['sections'][@section][:display_order] = [sect_nm]
+          when 3
+            sect_nm = @section
+            ss_nm = @muddled
+            @cfg['sections'][sect_nm][:display_order] << ss_nm
+            landing = {title: ss_nm, code: @results}
+            @cfg['code_struct'] << landing
+            @cfg['link_hash'][ss_nm] = landing
+          when 0
+            puts "discarding content before first header"
+        end
+        @results = []
       end
       
       # builds the section, subsections in cgf['sections'] etc
@@ -87,24 +131,29 @@ module Kramdown
         txt = el.options[:raw_text]
         mdkey = txt.gsub(' ','-')
         mdkey << '.md'
-        puts "deeper hdr #{text}"
         case hlevel
         when 1    # intro - only one of these 
+          #close_level txt
+          @muddled = mdkey
           @level = 1
           @cfg['toc']['section_order'] = [] # replace existing
-          @results = %{para(strong("#{txt}"), :size => 22, :margin_left => 6, :margin_right => gutter)}
+          @results = [%{para(strong("#{txt}"), :size => 22, :margin_left => 6, :margin_right => gutter)}]
         when 2    # section
-          close_level
+          close_level txt
           @level = 2
+          @muddled = mdkey
           @section = txt
-          cfg['sections'][txt] = { :title => txt, :display_order => []}
-          @results =  %{para(strong("#{txt}"), :size => 18, :margin_left => 6, :margin_right => gutter)}
-        when 3   # subsection - methods if you're thinking Shoes Manual
-          close_level
+          @cfg['sections'][@section] = { :title => txt, :display_order => [] }
+          puts "level 2 #{txt} for #{@cfg['sections'][@section].inspect}"
+          @results = [%{para(strong("#{txt}"), :size => 18, :margin_left => 6, :margin_right => gutter)}]
+        when 3   # subsection - [methods if you're thinking like Shoes Manual]
+          close_level txt
           @level = 3
+          @muddled = mdkey
           @subsection = txt
-          cfg['sections'][@section][:display_order] << mdkey
-          @results << %{para(strong("#{txt}"), :size => 14, :margin_left => 6, :margin_right => gutter)}
+          puts "level 3 #{@section} under #{@cfg['sections'][@section].inspect}"
+          #@cfg['sections'][@section][:display_order] << mdkey
+          @results = [%{para(strong("#{txt}"), :size => 14, :margin_left => 6, :margin_right => gutter)}]
         when 4
           @results << %{para(strong("#{txt}"), :size => 12, :margin_left => 6, :margin_right => gutter)}
         when 5
@@ -118,6 +167,17 @@ module Kramdown
         return nil
       end
          
+      def save
+        @rstack.push @results
+        @results = []
+      end
+      
+      def restore
+        prev = @rstack.pop
+        newc = @results
+        @results = prev + newc
+      end
+      
       def convert_p(el)
         results = []
         el.children.each do |inner_el|
@@ -128,23 +188,24 @@ module Kramdown
       end
          
       def convert_ul(el)
-        results = []
+        save
         el.children.each do |inner_el|
-          results << send(DISPATCHER[inner_el.type], inner_el)
+          @results << send(DISPATCHER[inner_el.type], inner_el)
         end
-        @results << results
+        restore
         return nil
       end
-         
+      
+      
       def convert_li(el)
-        results = []
+        save
         el.children.each do |inner_el|
-          results << %[flow(:margin_left => 30) { fill black; oval -10, 10, 6; #{send(DISPATCHER[inner_el.type], inner_el)} }]
+          @results << %[flow(:margin_left => 30) { fill black; oval -10, 10, 6; #{send(DISPATCHER[inner_el.type], inner_el)} }]
           #results << %[flow(:margin_left => 30) { para "\u2022"; #{send(DISPATCHER[inner_el.type], inner_el)} }]
-       end
-         @results << results
-         return nil
-     end
+        end
+        restore
+        return nil
+      end
       ##alias :convert_ol :convert_ul
       ##alias :convert_dl :convert_ul
                 
@@ -166,12 +227,13 @@ module Kramdown
          
       def convert_a(el)
         #puts "convert a called #{el.inspect}"
-        results = []
+        save
         el.children.each do |inner_el|
-          results << inner_el.value if inner_el.type.eql?(:text)
+          @results << inner_el.value if inner_el.type.eql?(:text)
             ##send(DISPATCHER[inner_el.type], inner_el)
         end
-        @results << %[para(link("#{results.join}") { open_url("#{el.attr['href']}") }, :margin_left => 0, :margin_right => 0)]
+        restore
+        @results << %[para(link("#{@results.join}") { open_url("#{el.attr['href']}") }, :margin_left => 0, :margin_right => 0)]
         return nil
       end
       
@@ -217,11 +279,12 @@ module Kramdown
       end
          
       def convert_strong(el)
-        results = []
+        save
         el.children.each do |inner_el|
-          results << inner_el.value
+          @results << inner_el.value
         end
-        t = results.size > 1 ? results.join : results[0]
+        t = results.size > 1 ? @results.join : @results[0]
+        restore
         @results << %[para strong("#{t}")]
         return nil
       end
@@ -303,9 +366,8 @@ module Kramdown
   end
 end
 
-public 
-def to_deeplook(e)
-   puts "to_deeplook called"
-   e.kind_of?(Array) ? (e.each { |n| rendering(n) }) : (eval e unless e.nil?)
-end
+#def to_deeplook(e)
+#   puts "to_deeplook called #{e.inspect}"
+#   e.kind_of?(Array) ? (e.each { |n| rendering(n) }) : (eval e unless e.nil?)
+#end
 

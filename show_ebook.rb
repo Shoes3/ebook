@@ -46,11 +46,16 @@ module Shoes::Ebook
         # attempt to build navigitable intro, sections & subsections
         # (and Shoes code for them)
         tsect = cfg['toc']['section_order'][0]
-        cfg['sections'][tsect]['headers'] = {}
         fl = cfg['sections'][tsect][:display_order][0]
         puts "going deep on #{fl}"
+        # delete existing sections. They'll be created in the parse
+        cfg['sections'] = {}
         render_deep(cfg, cfg['doc_home'], fl)
-        puts cfg.inspect
+        # debug to stdout
+        cfg['sections'].each do |s_nm, s_val|
+          puts "section: #{s_nm}"
+          puts "  #{s_val}"
+        end
       else
         # no nav, but multiple files.
         cfg['toc']['section_order'].each_index do |si|
@@ -147,9 +152,10 @@ module Shoes::Ebook
   
   def draw_ruby(e)
    begin 
-     e.kind_of?(Array) ? (e.each { |n| rendering(n) }) : (instance_eval e unless e.nil?)
+      #e.kind_of?(Array) ? (e.each { |n| rendering(n) }) : (instance_eval e unless e.nil?)
+      e.kind_of?(Array) ? (e.each { |n| draw_ruby(n) }) : (instance_eval e unless e.nil?)
    rescue => e
-   puts e.inspect
+     puts e.inspect
      puts "code is: #{e}"
    end
   end
@@ -161,6 +167,7 @@ module Shoes::Ebook
   end
   
   # this is a utility for loading a file.md into @doc
+  # beware hash collisions
   def show_doc (cfg, fl)
     #puts cfg['link_hash'].keys
     here = cfg['link_hash'][fl]
@@ -375,9 +382,10 @@ module Shoes::Ebook
             @toc[title] =
               stack hidden: @toc.empty? ? false: true do
                 links = sect[:display_order].collect do |nm|
+                  puts "Menu build: #{nm}"
                   [ link(clean_name(nm)) { open_entry @@cfg, nm }, "\n"]
                 end.flatten
-                links[-1] = {:size => 9, :margin => 4, :margin_left => 10}
+                #links[-1] = {:size => 9, :margin => 4, :margin_left => 10}
                 para *links
               end
           end

@@ -1,5 +1,7 @@
 # Shoes ebook
 
+Welcome to the Shoes Ebook Documentation
+
 ## Purpose
 
 Transform markdown formatted text files into native Shoes applications. Why 
