@@ -110,7 +110,8 @@ module Kramdown
             landing = {title: sect_nm, code: @results}
             @cfg['code_struct'] << landing
             @cfg['link_hash'][sect_nm] = landing 
-            @cfg['sections'][@section][:display_order] = [sect_nm]
+            @cfg['sections'][@section]['intro'] = sect_nm
+            #@cfg['sections'][@section][:display_order] = [sect_nm]
           when 3
             sect_nm = @section
             ss_nm = @muddled
@@ -144,14 +145,14 @@ module Kramdown
           @muddled = mdkey
           @section = txt
           @cfg['sections'][@section] = { :title => txt, :display_order => [] }
-          puts "level 2 #{txt} for #{@cfg['sections'][@section].inspect}"
+          #puts "level 2 #{txt} for #{@cfg['sections'][@section].inspect}"
           @results = [%{para(strong("#{txt}"), :size => 18, :margin_left => 6, :margin_right => gutter)}]
         when 3   # subsection - [methods if you're thinking like Shoes Manual]
           close_level txt
           @level = 3
           @muddled = mdkey
           @subsection = txt
-          puts "level 3 #{@section} under #{@cfg['sections'][@section].inspect}"
+          #puts "level 3 #{@section} under #{@cfg['sections'][@section].inspect}"
           #@cfg['sections'][@section][:display_order] << mdkey
           @results = [%{para(strong("#{txt}"), :size => 14, :margin_left => 6, :margin_right => gutter)}]
         when 4
@@ -179,16 +180,18 @@ module Kramdown
       end
       
       def convert_p(el)
-        results = []
+        save
         el.children.each do |inner_el|
-          results << send(DISPATCHER[inner_el.type], inner_el)
+          @results << send(DISPATCHER[inner_el.type], inner_el)
         end
-        @results << %[flow(:margin_left => 6, :margin_right => gutter) { #{results.join(";")} }]
+        @results << %[flow(:margin_left => 6, :margin_right => gutter) { #{@results.join(";")} }]
+        restore
         return nil
       end
          
       def convert_ul(el)
         save
+        # doesn't do much in Shoes. Maybe create a stack for the list items to follow?
         el.children.each do |inner_el|
           @results << send(DISPATCHER[inner_el.type], inner_el)
         end
@@ -196,9 +199,10 @@ module Kramdown
         return nil
       end
       
-      
+      # currently this simulates a ul list item only
       def convert_li(el)
         save
+        puts "li"
         el.children.each do |inner_el|
           @results << %[flow(:margin_left => 30) { fill black; oval -10, 10, 6; #{send(DISPATCHER[inner_el.type], inner_el)} }]
           #results << %[flow(:margin_left => 30) { para "\u2022"; #{send(DISPATCHER[inner_el.type], inner_el)} }]
@@ -222,7 +226,6 @@ module Kramdown
         end
         #puts "smartquote sub #{t}"
         @results << %{para("#{t}", :margin_left => 0, :margin_right => 0)}
-        return nil
       end
          
       def convert_a(el)
@@ -232,8 +235,8 @@ module Kramdown
           @results << inner_el.value if inner_el.type.eql?(:text)
             ##send(DISPATCHER[inner_el.type], inner_el)
         end
-        restore
         @results << %[para(link("#{@results.join}") { open_url("#{el.attr['href']}") }, :margin_left => 0, :margin_right => 0)]
+        restore
         return nil
       end
       
@@ -326,12 +329,13 @@ module Kramdown
          
       # I think this means Shoes italic, not strong
       def convert_em(el)
-        results = []
+        save
         el.children.each do |inner_el|
-          results << inner_el.value
+          @results << inner_el.value
         end
-        t = results.size > 1 ? results.join : results[0]
-        @results << %[para "#{t}", :emphasis => "italic"]        
+        t = results.size > 1 ? @results.join : @results[0]
+        @results << %[para "#{t}", :emphasis => "italic"]
+        restore 
         return nil
      end
       

@@ -23,7 +23,7 @@ module Shoes::Ebook
         { :syntax_highlighter => "rouge",
           :syntax_highlighter_opts => { css_class: false, line_numbers: false, inline_theme: "github" },
           cfg: cfg, input: cfg['input_format'], hard_wrap: false,
-          gfm_quirk: []
+          smart_quotes: ["apos", "apos", "quot", "quot"], gfm_quirk: []
         }
       ).to_deeplook
     #rendering(render_doc)
@@ -52,10 +52,10 @@ module Shoes::Ebook
         cfg['sections'] = {}
         render_deep(cfg, cfg['doc_home'], fl)
         # debug to stdout
-        cfg['sections'].each do |s_nm, s_val|
-          puts "section: #{s_nm}"
-          puts "  #{s_val}"
-        end
+        #cfg['sections'].each do |s_nm, s_val|
+        #  puts "section: #{s_nm}"
+        #  puts "  #{s_val}"
+        #end
       else
         # no nav, but multiple files.
         cfg['toc']['section_order'].each_index do |si|
