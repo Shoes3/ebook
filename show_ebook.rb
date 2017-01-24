@@ -29,6 +29,14 @@ module Shoes::Ebook
     #rendering(render_doc)
   end
 
+  # debug display 
+  def display_short(cfg)
+    puts "toc[section_order]: #{cfg['toc']['section_order']}"
+    cfg['sections'].each do |s_nm, s_val|
+      puts "section: #{s_nm}"
+      puts "  #{s_val}"
+    end
+  end
   
   # TODO: This will be moved to a separate script in the future as a 'compile' phase of 
   # ebook-builder where it will also pre-populate picky db. For now, we interpret, sort of
@@ -51,13 +59,7 @@ module Shoes::Ebook
         # delete existing sections. They'll be created in the parse
         cfg['sections'] = {}
         render_deep(cfg, cfg['doc_home'], fl)
-        #debug to stdout
-        puts "sections: #{cfg['toc']['section_order']}"
-        cfg['sections'].each do |s_nm, s_val|
-          puts "section: #{s_nm}"
-          puts "  #{s_val}"
-        end
-        # create a 'hello' section 
+        display_short cfg # debug display
       else
         # no nav, but multiple files.
         cfg['toc']['section_order'].each_index do |si|
@@ -81,6 +83,7 @@ module Shoes::Ebook
       #cfg['toc']['files'] = [ toc_root_fl]
       cfg['code_struct'] <<  landing
       cfg['link_hash'][toc_root_fl] = landing
+     
       # parse Toc files and hook the generated code into the cfg
       cfg['toc']['section_order'].each_index do |si|
         nav_fl = cfg['toc']['files'][si]
@@ -106,7 +109,15 @@ module Shoes::Ebook
           cfg['link_hash'][fl] = landing
         end
       end
-      #puts "Code for keys #{cfg['link_hash'].keys}"
+      
+      # create a minimal section for navigating to the opening (highest level)
+      # the ruby code is in link_hash 
+      intro_nm = 'Hello!' #cfg['book_title'] 
+      cfg['sections'][intro_nm] = { :title => intro_nm, :display_order => [],
+        'intro' => toc_root_fl}
+      cfg['toc']['section_order'].unshift(intro_nm)
+      display_short cfg # for debugging 
+
     else    # have_nav == true && nested == false
       # One 1 chapter/section , many files possible, with one nav menu
       # parse the root doc. (nav menu)
