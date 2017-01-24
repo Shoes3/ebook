@@ -64,6 +64,8 @@ module Kramdown
          
       def convert(el)
         send(DISPATCHER[el.type], el)
+        puts "AT THE END"
+        close_level
       end
          
       def convert_root(el)
@@ -84,7 +86,7 @@ module Kramdown
       
       # @level is the current level to close to put @results into
       # the cfg in the proper place to show_ebook can display them
-      def close_level (new_name)
+      def close_level
         # debugging - create a dump file for level's content
         if @level > 0
           dfl = "dump/#{@level}-#{@muddled}.rbd"
@@ -98,12 +100,15 @@ module Kramdown
           when 1
             @cfg['have_nav'] = true
             @cfg['nested'] = true
-            opening = @cfg['book_title']
+            opening = @title #@cfg['book_title']
             @cfg['toc']['root'] = opening
             landing = {title: opening, code: @results}
             @cfg['code_struct'] << landing
             @cfg['link_hash'][opening] = landing
-
+            # gird thy loins - going to create a section
+            @cfg['sections'][opening] = { :title => opening, 
+              :display_order => [], 'intro' =>  opening}
+            @cfg['toc']['section_order'] << opening
           when 2
             sect_nm = @muddled
             @cfg['toc']['section_order'] << @section
@@ -137,10 +142,11 @@ module Kramdown
           #close_level txt
           @muddled = mdkey
           @level = 1
+          @title = txt
           @cfg['toc']['section_order'] = [] # replace existing
           @results = [%{para(strong("#{txt}"), :size => 22, :margin_left => 6, :margin_right => gutter)}]
         when 2    # section
-          close_level txt
+          close_level 
           @level = 2
           @muddled = mdkey
           @section = txt
@@ -148,7 +154,7 @@ module Kramdown
           #puts "level 2 #{txt} for #{@cfg['sections'][@section].inspect}"
           @results = [%{para(strong("#{txt}"), :size => 18, :margin_left => 6, :margin_right => gutter)}]
         when 3   # subsection - [methods if you're thinking like Shoes Manual]
-          close_level txt
+          close_level 
           @level = 3
           @muddled = mdkey
           @subsection = txt
@@ -201,12 +207,12 @@ module Kramdown
       
       # currently this simulates a ul list item only
       def convert_li(el)
+        #puts "\nli begin: #{ @results}"
         save
-        puts "li"
         el.children.each do |inner_el|
           @results << %[flow(:margin_left => 30) { fill black; oval -10, 10, 6; #{send(DISPATCHER[inner_el.type], inner_el)} }]
-          #results << %[flow(:margin_left => 30) { para "\u2022"; #{send(DISPATCHER[inner_el.type], inner_el)} }]
         end
+        #puts "\nli @results: #{@results}"
         restore
         return nil
       end
@@ -214,6 +220,7 @@ module Kramdown
       ##alias :convert_dl :convert_ul
                 
       def convert_smart_quote(el)
+        save
         t = case el.value
           when :lsquo
             "\u2018"
@@ -226,10 +233,11 @@ module Kramdown
         end
         #puts "smartquote sub #{t}"
         @results << %{para("#{t}", :margin_left => 0, :margin_right => 0)}
+        restore
       end
          
       def convert_a(el)
-        #puts "convert a called #{el.inspect}"
+        puts "convert a called #{el.inspect}"
         save
         el.children.each do |inner_el|
           @results << inner_el.value if inner_el.type.eql?(:text)
@@ -237,15 +245,16 @@ module Kramdown
         end
         @results << %[para(link("#{@results.join}") { open_url("#{el.attr['href']}") }, :margin_left => 0, :margin_right => 0)]
         restore
-        return nil
       end
       
       # from are `back ticks` in markdown
       def convert_codespan(el)
+        save
         # need to escape some things in the string like "
         str = el.value
         str.gsub!(/\"/, '\"')
          @results << %[para "#{str}", font: 'monospace', stroke: coral]
+         restore
         return nil
       end
       
@@ -293,6 +302,7 @@ module Kramdown
       end
       
       def convert_img(el)
+        save
         url = el.attr['src']
         ext = File.extname(url);
         lcl = @cfg['images'][url]
@@ -301,14 +311,17 @@ module Kramdown
         else
           puts "Not an image: #{url}"
         end
+        restore
         return nil
      end
       
       def convert_gfmlink(el)
+        save
         str =  el.attr['gfmlink']
         #puts "gfmlink find: #{str}"
         # defer to Run Time method to figure it where to go
         @results << %[para(link("#{str}") { show_link("#{str}")})]
+        restore
         return nil
       end
   
@@ -341,15 +354,19 @@ module Kramdown
       
       # begin TODO fix these in kd-render/kd-deepr
       def convert_br(el)
+        puts "convert_br called"
       end
       
       def convert_blockquote(el)
+        puts "convert_blockquote called"
       end
       
       def convert_table(el)
+        puts "convert_table called"
       end
       
       def convert_ol(el)
+        puts "convert_ol called"
       end
       
       def convert_html_element(el)
@@ -370,8 +387,5 @@ module Kramdown
   end
 end
 
-#def to_deeplook(e)
-#   puts "to_deeplook called #{e.inspect}"
-#   e.kind_of?(Array) ? (e.each { |n| rendering(n) }) : (eval e unless e.nil?)
-#end
+
 

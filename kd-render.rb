@@ -123,7 +123,7 @@ module Kramdown
         el.children.each do |inner_el|
           results << %[flow(:margin_left => 30) { fill black; oval -10, 10, 6; #{send(DISPATCHER[inner_el.type], inner_el)} }]
           #results << %[flow(:margin_left => 30) { para "\u2022"; #{send(DISPATCHER[inner_el.type], inner_el)} }]
-       end
+        end
         results
       end
       ##alias :convert_ol :convert_ul

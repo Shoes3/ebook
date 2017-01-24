@@ -51,11 +51,13 @@ module Shoes::Ebook
         # delete existing sections. They'll be created in the parse
         cfg['sections'] = {}
         render_deep(cfg, cfg['doc_home'], fl)
-        # debug to stdout
-        #cfg['sections'].each do |s_nm, s_val|
-        #  puts "section: #{s_nm}"
-        #  puts "  #{s_val}"
-        #end
+        #debug to stdout
+        puts "sections: #{cfg['toc']['section_order']}"
+        cfg['sections'].each do |s_nm, s_val|
+          puts "section: #{s_nm}"
+          puts "  #{s_val}"
+        end
+        # create a 'hello' section 
       else
         # no nav, but multiple files.
         cfg['toc']['section_order'].each_index do |si|
@@ -135,6 +137,7 @@ module Shoes::Ebook
   # these are the toc nav files names attached to a stack
   # 
   def open_sidebar(cfg, sect)
+    puts "open sidebar #{sect}"
     #visited(sect_s)
     #sect_h = @sections[sect_s]
     #sect_cls = sect_h['class']
@@ -169,7 +172,7 @@ module Shoes::Ebook
   # this is a utility for loading a file.md into @doc
   # beware hash collisions
   def show_doc (cfg, fl)
-    #puts cfg['link_hash'].keys
+    #puts "sections avail: #{cfg['link_hash'].keys} looking for #{fl}"
     here = cfg['link_hash'][fl]
     code = here[:code]
     @doc.clear do
@@ -356,20 +359,6 @@ module Shoes::Ebook
         # create menus on the sidebar
         @toc = {}
         stack :margin => 12, :width => 130, :margin_top => 20 do
-          #docs.each do |sect_s, sect_h|
-          #  sect_cls = sect_h['class']
-          #  para strong(link(sect_s, :stroke => black) { open_section(sect_s) }),
-          #    :size => 11, :margin => 4, :margin_top => 0
-          #  @toc[sect_cls] =
-          #    stack :hidden => @toc.empty? ? false : true do
-          #      links = sect_h['sections'].map do |meth_s, meth_h|
-          #        [link(meth_s) { open_methods(meth_s) }, "\n"]
-          #      end.flatten
-          #      links[-1] = {:size => 9, :margin => 4, :margin_left => 10}
-          #      para *links
-          #    end
-          # end
-          
           # TODO: Again, 'nested' raises it's pointy head and it's not smiling
           @@cfg['toc']['section_order'].each do |sect_nm| 
             #puts "Create menu for #{sect_nm} in #{@@cfg['toc']['section_order']}"
@@ -403,13 +392,12 @@ module Shoes::Ebook
       icon_png = "#{DIR}/static/app-icon.png"
       icon_png = @@cfg['icon'] if @@cfg['icon']
       image :width => 120, :height => 120, :top => -18, :left => 6 do
-        #image "#{DIR}/static/app-icon.png", :width => 100, :height => 100, :top => 10, :left => 10 
         image icon_png, :width => 85, :height => 85, :top => 18, :left => 10 
         glow 2
       end
     end
-  rescue => e
-    p e.message
-    p e.class
+#  rescue => e
+#    p e.message
+#    p e.class
   end
 end 
