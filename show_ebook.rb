@@ -140,16 +140,16 @@ module Shoes::Ebook
         end
       end
     end
-    return cfg['code_struct']
   end 
   
+  # ----- end of load docs -------
   
   # open/close sections aka chapters on the sidebar due to click
   # these are the toc nav files names attached to a stack
   # 
   def open_sidebar(cfg, sect)
     puts "open sidebar #{sect}"
-    #visited(sect_s)
+    visited(sect[:title])
     #sect_h = @sections[sect_s]
     #sect_cls = sect_h['class']
     #@toc.each { |k,v| v.send(k == sect_cls ? :show : :hide) }
@@ -210,6 +210,61 @@ module Shoes::Ebook
   def clean_name(fl)
     File.basename(fl, ".*").gsub(/\-/,' ')
   end
+  
+  #---- handle backward/forward movement ----
+  # TODO - not working on ebook.
+  def open_link(head)
+    if head == "Search"
+      show_search
+    elsif @sections.has_key? head
+      open_section(head)
+    elsif @methods.has_key? head
+      open_methods(head)
+    elsif @mindex.has_key? head
+      head, sub = @mindex[head]
+      open_methods(head, nil, sub)
+    elsif head =~ /^http:\/\//
+      debug head
+      visit head
+    end
+  end
+
+  def add_next_link(docn, optn)
+    opt1, optn = @docs[docn][1], optn + 1
+    if opt1['sections'][optn]
+      @doc.para "Next: ",
+        link(opt1['sections'][optn][1]['title']) { open_methods(opt1['sections'][optn][0]) },
+        :align => "right"
+    elsif @docs[docn + 1]
+      @doc.para "Next: ",
+        link(@docs[docn + 1][0]) { open_section(@docs[docn + 1][0].gsub(/\W/, '')) },
+        :align => "right"
+    end
+  end
+  
+  # page is a string - section title in
+  def visited(page)
+    @visited[:forward] = [] unless @visited[:clicked]
+    @visited[:back] << page unless @visited[:back].last.eql?(page)
+  end
+  
+  def visit_back
+     if 1 < @visited[:back].size
+        @visited[:clicked] = true
+        @visited[:forward] << @visited[:back].pop
+        open_link(@visited[:back].last)
+     end
+     @visited[:clicked] = false
+   end
+
+  def visit_forward
+     unless @visited[:forward].empty?
+        @visited[:clicked] = true
+        open_link(@visited[:forward].pop)
+     end
+     @visited[:clicked] = false
+  end
+  # --- end handle back/foreward
 
   # ---- begin runtime support - called from the rendered code for more
   #      complex operations

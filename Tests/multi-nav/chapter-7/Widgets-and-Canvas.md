@@ -1,4 +1,4 @@
-##Of Shoes::Widget and Shoes::Canvas##
+## Of Shoes::Widget and Shoes::Canvas
 
 There is 4 kinds of slot in Shoes :
 - flow   a class **Shoes::Types::Flow** (or Shoes::Flow : aliased to be the same)
@@ -96,7 +96,7 @@ Note that inside the Shoes::Widget subclass (TestWidget here) **self**, thanks t
 As a reminder the main benefit of a widget is that you can reuse it at will in your actual script or later, if you save it to a file, in a totally different script.
 
   
-###Let's build a simple widget : a check with some text###
+### Let's build a simple widget : a check with some text
 ```ruby
 class CheckText < Shoes::Widget
     def initialize(text, active=true)
